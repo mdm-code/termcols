@@ -12,8 +12,8 @@ import (
 func ExampleColorize() {
 	s := termcols.Colorize(
 		"Colorized text!",
-		termcols.RED_FG,
-		termcols.UNDEDRLINE,
+		termcols.RedFg,
+		termcols.Underline,
 		termcols.Rgb24(termcols.BG, 120, 255, 54),
 	)
 	fmt.Println(s)
