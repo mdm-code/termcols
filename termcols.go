@@ -72,7 +72,7 @@ const (
 	YellowBg  SgrAttr = Csi + `43m`
 	BlueBg    SgrAttr = Csi + `44m`
 	MagentaBg SgrAttr = Csi + `45m`
-	Cyanbg    SgrAttr = Csi + `46m`
+	CyanBg    SgrAttr = Csi + `46m`
 	WhiteBg   SgrAttr = Csi + `47m`
 	DefaultBg SgrAttr = Csi + `49m`
 )
@@ -119,7 +119,7 @@ func Colorize(s string, attrs ...SgrAttr) string {
 // the colors from a 256-color lookup table, hence the parameter should be in
 // the range [0, 255].
 func Rgb8(l layer, c uint8) SgrAttr {
-	seq := fmt.Sprintf("%s;5;%d", l, c)
+	seq := fmt.Sprintf("%s;5;%dm", l, c)
 	return SgrAttr(seq)
 }
 
