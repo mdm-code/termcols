@@ -22,6 +22,10 @@ func TestColorize(t *testing.T) {
 		expOut string
 	}{
 		{
+			[]SgrAttr{},
+			` Colorize me! `,
+		},
+		{
 			[]SgrAttr{Bold, BlackFg, WhiteBbg},
 			`\033[1m\033[30m\033[107m Colorize me! \033[0m`,
 		},
