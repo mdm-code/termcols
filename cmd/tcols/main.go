@@ -12,10 +12,10 @@ Options:
 	-s, --style  specify styles and colors to apply
 
 Example:
-	tcols bold < <(echo 'Hello, world!')
+	tcols --style bold blue_fg < <(echo 'Hello, world!')
 
 Output:
-	\033[1mHello, World!\033[0m
+	Raw: \033[1m\033[34mHello, World!\033[0m
 
 The program returns text read from a file with Select Graphic Rendition control
 sequences prepended and the reset control sequence appended at the end. The
@@ -47,10 +47,10 @@ Options:
 	-s, --style  specify styles and colors to apply
 
 Example:
-	tcols --style bold < <(echo 'Hello, world!')
+	tcols --style bold blue_fg < <(echo 'Hello, world!')
 
 Output:
-	\033[1mHello, World!\033[0m
+	[1m[34mHello, World![0m
 
 The program returns text read from a file with Select Graphic Rendition control
 sequences prepended and the reset control sequence appended at the end. The
@@ -84,7 +84,8 @@ func main() {
 		os.Exit(exitFailure)
 	}
 
-	output := termcols.Colorize(string(text), termcols.Bold)
+	output := termcols.Colorize(string(text), termcols.Bold, termcols.RedBfg)
+
 	_, err = out.WriteString(output)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
