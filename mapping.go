@@ -1,6 +1,9 @@
 package termcols
 
-import "errors"
+import (
+	"errors"
+	"regexp"
+)
 
 var layerMap map[string]layer = map[string]layer{"fg": FG, "bg": BG}
 
@@ -78,9 +81,26 @@ returns false, I am going to use regex to do
 var errMap = errors.New("errMap")
 
 func mapColor(s string) (SgrAttr, error) {
+	re, err := regexp.Compile(`(?mi)^rgb(8|24)=(?:fg|bg)(?::\d{1,3}){1,3}$`)
+	if err != nil {
+		return "", errMap
+	}
+
+	if matchRegexp(re, s) {
+		// Discern between 8 and 24
+	}
+
 	col, ok := colorMap[s]
 	if !ok {
 		return "", errMap
 	}
 	return col, nil
+}
+
+func matchRegexp(r *regexp.Regexp, val any) bool {
+	valStr, ok := val.(string)
+	if !ok {
+		return false
+	}
+	return r.MatchString(valStr)
 }
