@@ -1,5 +1,7 @@
 package termcols
 
+import "errors"
+
 var layerMap map[string]layer = map[string]layer{"fg": FG, "bg": BG}
 
 var colorMap map[string]SgrAttr = map[string]SgrAttr{
@@ -73,7 +75,12 @@ returns false, I am going to use regex to do
 	    instead of a boolean.
 */
 
-func mapColor(s string) (SgrAttr, bool) {
+var errMap = errors.New("errMap")
+
+func mapColor(s string) (SgrAttr, error) {
 	col, ok := colorMap[s]
-	return col, ok
+	if !ok {
+		return "", errMap
+	}
+	return col, nil
 }
