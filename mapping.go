@@ -3,6 +3,8 @@ package termcols
 import (
 	"errors"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 var layerMap map[string]layer = map[string]layer{"fg": FG, "bg": BG}
@@ -62,39 +64,46 @@ var colorMap map[string]SgrAttr = map[string]SgrAttr{
 	"whitebbg": WhiteBbg,
 }
 
-/*
-PLAN:
-=====
-
-After the color map (which appears to be the more obvious choice for users)
-returns false, I am going to use regex to do
-	(1) do two regexpr matches for (a) rgb8 and (b) rgb24
-	(2) in case one or the other passses, I will be using capturing groups
-	    to get the paramters for (a) rgb8() or (b) rgb24() functions that
-	    return SgrAttr like charm
-	(3) in case map and two checks fail, I am going to return empty string and
-	    false.
-	(*) Eventually, I want to return an error (like a brand errors.New() one)
-	    instead of a boolean.
-*/
-
-var errMap = errors.New("errMap")
+var errMap = errors.New("Color mapping error")
 
 func mapColor(s string) (SgrAttr, error) {
-	re, err := regexp.Compile(`(?mi)^rgb(8|24)=(?:fg|bg)(?::\d{1,3}){1,3}$`)
+	col, ok := colorMap[s]
+	if ok {
+		return col, nil
+	}
+	// TODO (michal): remove redundant top-level regex and just do re8 and re24
+	p := `(?mi)^rgb(?:8|24)=(?:fg|bg)(?::\d{1,3}){1,3}$`
+	re, err := regexp.Compile(p)
 	if err != nil {
 		return "", errMap
 	}
-
 	if matchRegexp(re, s) {
-		// Discern between 8 and 24
+		p8 := `(?mi)^rgb8=(?P<layer>fg|bg):(?P<color>\d{1,3})$`
+		re8, err := regexp.Compile(p8)
+		if err != nil {
+			return "", errMap
+		}
+		if matchRegexp(re8, s) {
+			var c8 SgrAttr
+			if c8, ok := collateRgb8(re8, s); !ok {
+				return c8, errMap
+			}
+			return c8, nil
+		}
+		p24 := `(?mi)^rgb24=(?P<layer>fg|bg):(?P<r>\d{1,3}):(?P<g>\d{1,3}):(?P<b>\d{1,3})$`
+		re24, err := regexp.Compile(p24)
+		if err != nil {
+			return "", errMap
+		}
+		if matchRegexp(re24, s) {
+			var c24 SgrAttr
+			if c24, ok := collateRgb24(re24, s); !ok {
+				return c24, errMap
+			}
+			return c24, nil
+		}
 	}
-
-	col, ok := colorMap[s]
-	if !ok {
-		return "", errMap
-	}
-	return col, nil
+	return "", errMap
 }
 
 func matchRegexp(r *regexp.Regexp, val any) bool {
@@ -103,4 +112,105 @@ func matchRegexp(r *regexp.Regexp, val any) bool {
 		return false
 	}
 	return r.MatchString(valStr)
+}
+
+func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
+	params := getParams(r, s)
+	lr, ok := params["layer"]
+	if !ok {
+		return "", ok
+	}
+	lr = strings.ToLower(lr)
+	l, ok := layerMap[lr]
+	if !ok {
+		return "", ok
+	}
+
+	c, ok := params["color"]
+	if !ok {
+		return "", ok
+	}
+	col, err := strconv.Atoi(c)
+	if err != nil {
+		return "", false
+	}
+	if ok := validUint(col); !ok {
+		return "", ok
+	}
+
+	result := Rgb8(l, uint8(col))
+	return result, true
+}
+
+func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
+	params := getParams(r, s)
+	lr, ok := params["layer"]
+	if !ok {
+		return "", ok
+	}
+	lr = strings.ToLower(lr)
+	l, ok := layerMap[lr]
+	if !ok {
+		return "", ok
+	}
+
+	// Red
+	cr, ok := params["r"]
+	if !ok {
+		return "", ok
+	}
+	rcol, err := strconv.Atoi(cr)
+	if err != nil {
+		return "", false
+	}
+	if ok := validUint(rcol); !ok {
+		return "", ok
+	}
+
+	// Green
+	cg, ok := params["g"]
+	if !ok {
+		return "", ok
+	}
+	gcol, err := strconv.Atoi(cg)
+	if err != nil {
+		return "", false
+	}
+	if ok = validUint(gcol); !ok {
+		return "", ok
+	}
+
+	// Blue
+	cb, ok := params["b"]
+	if !ok {
+		return "", ok
+	}
+	bcol, err := strconv.Atoi(cb)
+	if err != nil {
+		return "", false
+	}
+	if ok := validUint(bcol); !ok {
+		return "", ok
+	}
+
+	result := Rgb24(l, uint8(rcol), uint8(gcol), uint8(bcol))
+	return result, true
+}
+
+func getParams(r *regexp.Regexp, s string) map[string]string {
+	match := r.FindStringSubmatch(s)
+	result := make(map[string]string)
+	for i, name := range r.SubexpNames() {
+		if i > 0 && i <= len(match) {
+			result[name] = match[i]
+		}
+	}
+	return result
+}
+
+func validUint(i int) bool {
+	if i >= 0 && i <= 255 {
+		return true
+	}
+	return false
 }

@@ -29,8 +29,11 @@ func TestMapping(t *testing.T) {
 		{"pinkbbg", errMap},
 		{"orangebfg", errMap},
 
-		{"rgb8=fg:25", errMap},
-		{"rgb24=bg:255:24:123", errMap},
+		{"rgb8=fg:25", nil},
+		{"rgb24=bg:255:24:123", nil},
+
+		// TODO (michal): Add more tests for failing RGB patterns
+		{"rgb24=bg:255:256:123", errMap}, // 256 > uint8 255 cap
 	}
 	for _, c := range cases {
 		t.Run(c.color, func(t *testing.T) {
