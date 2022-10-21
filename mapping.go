@@ -65,13 +65,13 @@ var colorMap map[string]SgrAttr = map[string]SgrAttr{
 }
 
 var (
-	errMap  = errors.New("Color mapping error")
-	errComp = errors.New("Regex compilation error")
+	errMap = errors.New("Color mapping error")
 )
 
 // MapColor attempts to interpret the string s as either one of the predefined
 // colors/styles or an RGB8 or RGB24 string pattern that is expected to come in
-// the one of the forms listed below.
+// the one of the case-insensitve patterns listed below. Otherwise the function
+// returns an empty string of type SgrAttr and errMap.
 //
 //   RGB 8  : rgb8=[fg|bg]:[0-255]
 //   RGB 24 : rgb24=[fg|bg]:[0-255]:[0-255]:[0-255]
@@ -80,37 +80,25 @@ func MapColor(s string) (SgrAttr, error) {
 	if ok {
 		return col, nil
 	}
-	// TODO (michal): remove redundant top-level regex and just do re8 and re24
-	p := `(?mi)^rgb(?:8|24)=(?:fg|bg)(?::\d{1,3}){1,3}$`
-	re, err := regexp.Compile(p)
-	if err != nil {
-		return "", errMap
+	re8 := regexp.MustCompile(
+		`(?mi)^rgb8=(?P<layer>fg|bg):(?P<color>\d{1,3})$`,
+	)
+	if matchRegexp(re8, s) {
+		col, ok := collateRgb8(re8, s)
+		if !ok {
+			return "", errMap
+		}
+		return col, nil
 	}
-	if matchRegexp(re, s) {
-		p8 := `(?mi)^rgb8=(?P<layer>fg|bg):(?P<color>\d{1,3})$`
-		re8, err := regexp.Compile(p8)
-		if err != nil {
+	re24 := regexp.MustCompile(
+		`(?mi)^rgb24=(?P<layer>fg|bg):(?P<r>\d{1,3}):(?P<g>\d{1,3}):(?P<b>\d{1,3})$`,
+	)
+	if matchRegexp(re24, s) {
+		col, ok := collateRgb24(re24, s)
+		if !ok {
 			return "", errMap
 		}
-		if matchRegexp(re8, s) {
-			var c8 SgrAttr
-			if c8, ok := collateRgb8(re8, s); !ok {
-				return c8, errMap
-			}
-			return c8, nil
-		}
-		p24 := `(?mi)^rgb24=(?P<layer>fg|bg):(?P<r>\d{1,3}):(?P<g>\d{1,3}):(?P<b>\d{1,3})$`
-		re24, err := regexp.Compile(p24)
-		if err != nil {
-			return "", errMap
-		}
-		if matchRegexp(re24, s) {
-			var c24 SgrAttr
-			if c24, ok := collateRgb24(re24, s); !ok {
-				return c24, errMap
-			}
-			return c24, nil
-		}
+		return col, nil
 	}
 	return "", errMap
 }
