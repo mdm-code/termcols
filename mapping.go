@@ -64,10 +64,19 @@ var colorMap map[string]SgrAttr = map[string]SgrAttr{
 	"whitebbg": WhiteBbg,
 }
 
-var errMap = errors.New("Color mapping error")
+var (
+	errMap  = errors.New("Color mapping error")
+	errComp = errors.New("Regex compilation error")
+)
 
-func mapColor(s string) (SgrAttr, error) {
-	col, ok := colorMap[s]
+// MapColor attempts to interpret the string s as either one of the predefined
+// colors/styles or an RGB8 or RGB24 string pattern that is expected to come in
+// the one of the forms listed below.
+//
+//   RGB 8  : rgb8=[fg|bg]:[0-255]
+//   RGB 24 : rgb24=[fg|bg]:[0-255]:[0-255]:[0-255]
+func MapColor(s string) (SgrAttr, error) {
+	col, ok := colorMap[strings.ToLower(s)]
 	if ok {
 		return col, nil
 	}
@@ -106,6 +115,7 @@ func mapColor(s string) (SgrAttr, error) {
 	return "", errMap
 }
 
+// MatchRegexp checks if val matches the provided regex r.
 func matchRegexp(r *regexp.Regexp, val any) bool {
 	valStr, ok := val.(string)
 	if !ok {
@@ -114,6 +124,7 @@ func matchRegexp(r *regexp.Regexp, val any) bool {
 	return r.MatchString(valStr)
 }
 
+// CollateRgb8 parses string s into SgrAttr using the provided regex r.
 func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	params := getParams(r, s)
 	lr, ok := params["layer"]
@@ -142,6 +153,7 @@ func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	return result, true
 }
 
+// CollateRgb24 parses string s into SgrAttr using the provided regex r.
 func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	params := getParams(r, s)
 	lr, ok := params["layer"]
@@ -197,6 +209,7 @@ func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	return result, true
 }
 
+// GetParams extracts regex named capturing group names and values.
 func getParams(r *regexp.Regexp, s string) map[string]string {
 	match := r.FindStringSubmatch(s)
 	result := make(map[string]string)
@@ -208,6 +221,7 @@ func getParams(r *regexp.Regexp, s string) map[string]string {
 	return result
 }
 
+// ValidUint verifies if the integer i falls in range [0, 255] of uint8.
 func validUint(i int) bool {
 	if i >= 0 && i <= 255 {
 		return true
