@@ -1,6 +1,8 @@
 package termcols
 
 import (
+	"fmt"
+	"regexp"
 	"testing"
 )
 
@@ -63,10 +65,37 @@ func TestMapColor(t *testing.T) {
 }
 
 func TestMatchRegexp(t *testing.T) {
-	/*
-	   get regexp's from MapColor and run a few cases against them using also
-	   non-strings
-	*/
+	cases := []struct {
+		re    *regexp.Regexp
+		s     interface{}
+		okExp bool
+	}{
+		{
+			regexp.MustCompile(
+				`(?mi)^rgb8=(?P<layer>fg|bg):(?P<color>\d{1,3})$`,
+			),
+			"rgb8=fg:255",
+			true,
+		},
+		{
+			regexp.MustCompile(
+				`(?mi)^rgb24=(?P<layer>fg|bg):(?P<r>\d{1,3}):(?P<g>\d{1,3}):(?P<b>\d{1,3})$`,
+			),
+			"rgb24=fg:255:255:255",
+			true,
+		},
+		{regexp.MustCompile(`rgb:.*`), "RGB24", false},
+		{regexp.MustCompile(`.*`), struct{}{}, false},
+		{regexp.MustCompile(`.*`), 10_000, false},
+		{regexp.MustCompile(`.*`), 3.14, false},
+	}
+	for _, c := range cases {
+		t.Run(fmt.Sprintf("%v", c.s), func(t *testing.T) {
+			if ok := matchRegexp(c.re, c.s); ok != c.okExp {
+				t.Errorf("Have: %t; want %t", ok, c.okExp)
+			}
+		})
+	}
 }
 
 func TestCollateRgb8(t *testing.T) {}
