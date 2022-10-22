@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/mdm-code/termcols"
 )
@@ -67,9 +68,18 @@ var (
 	style string
 )
 
-// TODO: Add a reference on `go doc tcols` in the `README.md` file.
+func args() {
+	// Evaluate flag args here, with this function call
+}
+
 // TODO: Add run function with string return so that it can be Example tested
-// TODO Style should be evaluated with a map string:SgrAttr and a function
+func run(v ...any) (string, error) {
+	// Run is called in main so that it can be tested with ExampleTest
+	// It returns a string with an error in case it fails
+	return "", nil
+}
+
+// TODO: Add a reference on `go doc tcols` in the `README.md` file.
 func main() {
 	flag.StringVar(&style, "s", "", "")
 	flag.StringVar(&style, "style", "", "")
@@ -84,7 +94,12 @@ func main() {
 		os.Exit(exitFailure)
 	}
 
-	output := termcols.Colorize(string(text), termcols.Bold, termcols.RedBfg)
+	colors, err := termcols.MapColors(strings.Fields(style))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, err.Error())
+		os.Exit(exitFailure)
+	}
+	output := termcols.Colorize(string(text), colors...)
 
 	_, err = out.WriteString(output)
 	if err != nil {
