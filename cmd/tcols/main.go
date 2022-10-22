@@ -30,7 +30,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/mdm-code/termcols"
 )
@@ -64,14 +63,6 @@ const (
 	exitFailure
 )
 
-var (
-	style string
-)
-
-func args() {
-	// Evaluate flag args here, with this function call
-}
-
 // TODO: Add run function with string return so that it can be Example tested
 func run(v ...any) (string, error) {
 	// Run is called in main so that it can be tested with ExampleTest
@@ -81,8 +72,6 @@ func run(v ...any) (string, error) {
 
 // TODO: Add a reference on `go doc tcols` in the `README.md` file.
 func main() {
-	flag.StringVar(&style, "s", "", "")
-	flag.StringVar(&style, "style", "", "")
 	flag.Usage = func() { fmt.Print(usage) }
 	flag.Parse()
 
@@ -94,7 +83,7 @@ func main() {
 		os.Exit(exitFailure)
 	}
 
-	colors, err := termcols.MapColors(strings.Fields(style))
+	colors, err := termcols.MapColors(flag.Args())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(exitFailure)
