@@ -68,9 +68,28 @@ var (
 	errMap = errors.New("Color mapping error")
 )
 
+// MapColors attempts to interpret string elements of the ss slice as a set of
+// predefined colors/styles or an RGB8/24 string pattern that is expected to
+// come in one of the case-insensitive patterns listed below. Otherwise the
+// function returns an empty slice and errMap.
+//
+//   RGB 8  : rgb8=[fg|bg]:[0-255]
+//   RGB 24 : rgb24=[fg|bg]:[0-255]:[0-255]:[0-255]
+func MapColors(ss []string) ([]SgrAttr, error) {
+	result := make([]SgrAttr, 0, 3)
+	for _, s := range ss {
+		attr, err := MapColor(s)
+		if err != nil {
+			return []SgrAttr{}, errMap
+		}
+		result = append(result, attr)
+	}
+	return result, nil
+}
+
 // MapColor attempts to interpret the string s as either one of the predefined
-// colors/styles or an RGB8 or RGB24 string pattern that is expected to come in
-// the one of the case-insensitve patterns listed below. Otherwise the function
+// colors/styles or an RGB8/24 string pattern that is expected to come in the
+// one of the case-insensitve patterns listed below. Otherwise the function
 // returns an empty string of type SgrAttr and errMap.
 //
 //   RGB 8  : rgb8=[fg|bg]:[0-255]
