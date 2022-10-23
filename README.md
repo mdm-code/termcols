@@ -22,8 +22,17 @@ package.
 
 ## Installation
 
+Use the following command to add the package to an existing project.
+
 ```sh
 go get github.com/mdm-code/termcols
+```
+
+Install the package to use the command-line `tcols` command to colorize
+text on the terminal.
+
+```sh
+go install github.com/mdm-code/termcols@latest
 ```
 
 
@@ -36,11 +45,26 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/mdm-code/termcols"
 )
 
 func main() {
-	fmt.Println("Hello, world!")
+	s := termcols.Colorize(
+		"Colorized text!",
+		termcols.RedFg,
+		termcols.Underline,
+		termcols.Rgb24(termcols.BG, 120, 255, 54),
+	)
+	fmt.Println(s)
 }
+```
+
+Aside from using the `termcols` package API that can be used in your Go
+project, can use the `tcols` terminal command:
+
+```sh
+tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
 ```
 
 
