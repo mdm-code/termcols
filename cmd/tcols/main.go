@@ -9,10 +9,10 @@ Usage:
 
 Options:
 	-h, --help   show this help message and exit
-	-s, --style  specify styles and colors to apply
+	-s, --style  list of styles and colors to apply to text
 
 Example:
-	tcols --style bold blue_fg < <(echo 'Hello, world!')
+	tcols --style='bold blue_fg' < <(echo 'Hello, world!')
 
 Output:
 	Raw: \033[1m\033[34mHello, World!\033[0m
@@ -45,10 +45,10 @@ Usage:
 
 Options:
 	-h, --help   show this help message and exit
-	-s, --style  specify styles and colors to apply
+	-s, --style  list of styles and colors to apply to text
 
 Example:
-	tcols --style bold blue_fg < <(echo 'Hello, world!')
+	tcols --style='bold blue_fg' < <(echo 'Hello, world!')
 
 Output:
 	[1m[34mHello, World![0m
@@ -66,6 +66,7 @@ const (
 
 var (
 	styles []string
+	text   []byte
 )
 
 // TODO: Add run function with string return so that it can be Example tested
@@ -75,29 +76,54 @@ func run(v ...any) (string, error) {
 	return "", nil
 }
 
+// NOTE: Use os.Args for unit testing in order to call run() in the example
 // Args handles command-line argument parsing.
 func args() {
-	fn := func(v string) error {
-		styles = strings.Fields(v)
-		return nil
+	for _, flagName := range []string{"s", "styles"} {
+		flag.Func(
+			flagName,
+			"list of styles and colors to apply to text",
+			func(v string) error {
+				styles = strings.Fields(v)
+				return nil
+			},
+		)
 	}
-	flag.Func("s", "list of styles and colors to apply to text", fn)
-	flag.Func("style", "list of styles and colors to apply to text", fn)
 	flag.Usage = func() { fmt.Print(usage) }
 	flag.Parse()
+
+	if len(flag.Args()) > 0 {
+		for _, fn := range flag.Args() {
+			func() {
+				f, err := os.Open(fn)
+				defer f.Close()
+
+				if err != nil {
+					fmt.Fprintf(os.Stderr, err.Error())
+					os.Exit(exitFailure)
+				}
+				t, err := ioutil.ReadAll(f)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, err.Error())
+					os.Exit(exitFailure)
+				}
+				text = append(text, t...)
+			}()
+		}
+	} else {
+		t, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, err.Error())
+			os.Exit(exitFailure)
+		}
+		text = append(text, t...)
+	}
 }
 
 // TODO: Add a reference on `go doc tcols` in the `README.md` file.
 func main() {
 	args()
 	out := bufio.NewWriter(os.Stdout)
-
-	text, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(exitFailure)
-	}
-
 	colors, err := termcols.MapColors(styles)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
