@@ -16,6 +16,6 @@ func ExampleColorize() {
 		termcols.Underline,
 		termcols.Rgb24(termcols.BG, 120, 255, 54),
 	)
-	fmt.Printf(s)
+	fmt.Println(s)
 	// Output: [31m[4m[48;2;120;255;54mColorized text![0m
 }
