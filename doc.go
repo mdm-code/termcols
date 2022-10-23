@@ -17,11 +17,9 @@ The same applies to 8-bit and 24-bit colors: there is no guarantee that these
 escape sequences are supported will be rendered properly on some terminals.
 Results may vary, so it is good practice to test it first for compatibility.
 
-# TODO: Add a paragraph or two on the termcols package public API.
-
-[Wikipedia ANSI]: https://en.wikipedia.org/wiki/ANSI_escape_code
-
-# TODO: Expand the usage section to reflect to final public API.
+The package has two public functions MapColor and MapColors that accept string
+values to try and map it onto a valid SgrAttr, however, it has been made
+implemented to simplify the terminal tcols command.
 
 # Usage
 
@@ -29,10 +27,20 @@ Results may vary, so it is good practice to test it first for compatibility.
 
   import (
   	"fmt"
+
+	"github.com/mdm-code/termcols"
   )
 
   func main() {
-  	fmt.Println("Hello, world!")
+	s := termcols.Colorize(
+		"Colorized text!",
+		termcols.RedFg,
+		termcols.Underline,
+		termcols.Rgb24(termcols.BG, 120, 255, 54),
+	)
+  	fmt.Println(s)
   }
+
+[Wikipedia ANSI]: https://en.wikipedia.org/wiki/ANSI_escape_code
 */
 package termcols
