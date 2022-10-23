@@ -30,6 +30,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/mdm-code/termcols"
 )
@@ -63,6 +64,10 @@ const (
 	exitFailure
 )
 
+var (
+	styles []string
+)
+
 // TODO: Add run function with string return so that it can be Example tested
 func run(v ...any) (string, error) {
 	// Run is called in main so that it can be tested with ExampleTest
@@ -70,11 +75,21 @@ func run(v ...any) (string, error) {
 	return "", nil
 }
 
-// TODO: Add a reference on `go doc tcols` in the `README.md` file.
-func main() {
+// Args handles command-line argument parsing.
+func args() {
+	fn := func(v string) error {
+		styles = strings.Fields(v)
+		return nil
+	}
+	flag.Func("s", "list of styles and colors to apply to text", fn)
+	flag.Func("style", "list of styles and colors to apply to text", fn)
 	flag.Usage = func() { fmt.Print(usage) }
 	flag.Parse()
+}
 
+// TODO: Add a reference on `go doc tcols` in the `README.md` file.
+func main() {
+	args()
 	out := bufio.NewWriter(os.Stdout)
 
 	text, err := ioutil.ReadAll(os.Stdin)
@@ -83,7 +98,7 @@ func main() {
 		os.Exit(exitFailure)
 	}
 
-	colors, err := termcols.MapColors(flag.Args())
+	colors, err := termcols.MapColors(styles)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, err.Error())
 		os.Exit(exitFailure)
