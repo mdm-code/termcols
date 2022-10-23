@@ -17,5 +17,5 @@ func ExampleColorize() {
 		termcols.Rgb24(termcols.BG, 120, 255, 54),
 	)
 	fmt.Println(s)
-	// Output: \033[31m\033[4m\033[48;2;120;255;54mColorized text!\033[0m
+	// Output: [31m[4m[48;2;120;255;54mColorized text![0m
 }
