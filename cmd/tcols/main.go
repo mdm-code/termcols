@@ -5,14 +5,14 @@ Tcols reads text from a file and writes the colorized text to the standard
 output.
 
 Usage:
-	tcols [options] [file]
+	tcols [-s|--style arg...] [file...]
 
 Options:
 	-h, --help   show this help message and exit
 	-s, --style  list of styles and colors to apply to text
 
 Example:
-	tcols --style='bold blue_fg' < <(echo 'Hello, world!')
+	tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
 
 Output:
 	Raw: \033[1m\033[34mHello, World!\033[0m
@@ -28,36 +28,13 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/mdm-code/termcols"
 )
-
-const usage = `tcols - add color to text on the terminal
-
-Tcols reads text from a file and writes the colorized text to the standard
-output.
-
-Usage:
-	tcols [options] [file]
-
-Options:
-	-h, --help   show this help message and exit
-	-s, --style  list of styles and colors to apply to text
-
-Example:
-	tcols --style='bold blue_fg' < <(echo 'Hello, world!')
-
-Output:
-	[1m[34mHello, World![0m
-
-The program returns text read from a file with Select Graphic Rendition control
-sequences prepended and the reset control sequence appended at the end. The
-sequence of attributes passed to the --style flag of the command is preserved,
-so colors and styles can (un)intentionally cancel out one another.
-`
 
 const (
 	exitSuccess = iota
@@ -66,20 +43,107 @@ const (
 
 var (
 	styles []string
-	text   []byte
 )
 
-// TODO: Add run function with string return so that it can be Example tested
-func run(v ...any) (string, error) {
-	// Run is called in main so that it can be tested with ExampleTest
-	// It returns a string with an error in case it fails
-	return "", nil
+func usage() string {
+	s := `tcols - add color to text on the terminal
+
+Tcols reads text from a file and writes the colorized text to the standard
+output.
+
+Usage:
+	tcols [-s|--style arg...] [file...]
+
+Options:
+	-h, --help   show this help message and exit
+	-s, --style  list of styles and colors to apply to text
+
+Example:
+	tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
+
+Output:
+	[1m[34mHello, World![0m
+
+The program returns text read from a file with Select Graphic Rendition control
+sequences prepended and the reset control sequence appended at the end. The
+sequence of attributes passed to the --style flag of the command is preserved,
+so colors and styles can (un)intentionally cancel out one another.
+
+Styles:
+	%s %s %s %s
+	%s %s %s %s
+	%s
+
+Colors:
+	%s %s %s %s
+	%s %s %s %s
+	%s %s %s %s
+	%s %s %s %s
+	%s %s %s %s
+	%s %s %s %s
+	%s %s %s %s
+	%s %s %s %s
+	%s %s
+
+Rgb8:
+	%s %s
+Rgb24:
+	%s %s
+`
+	return fmt.Sprintf(
+		s,
+		`[1mbold[0m`,
+		`[2mfaint[0m`,
+		`[3mitalic[0m`,
+		`[4munderline[0m`,
+		`[5mblink[0m`,
+		`[7mreverse[0m`,
+		`[8mhide[0m`,
+		`[9mstrike[0m`,
+		`[10mdefaultstyle[0m`,
+		`[30mblackfg[0m`,
+		`[90mblackbfg[0m`,
+		`[40mblackbg[0m`,
+		`[100mblackbbg[0m`,
+		`[31mredfg[0m`,
+		`[91mredbbfg[0m`,
+		`[41mredbg[0m`,
+		`[101mredbbbg[0m`,
+		`[32mgreenfg[0m`,
+		`[92mgreenbfg[0m`,
+		`[42mgreenbg[0m`,
+		`[102mgreenbbg[0m`,
+		`[33myellowfg[0m`,
+		`[93myellowbfg[0m`,
+		`[43myellowbg[0m`,
+		`[103myellowbbg[0m`,
+		`[34mbluefg[0m`,
+		`[94mbluebfg[0m`,
+		`[44mbluebg[0m`,
+		`[104mbluebbg[0m`,
+		`[35mmagentafg[0m`,
+		`[95mmagentabfg[0m`,
+		`[45mmagentabg[0m`,
+		`[105mmagentabbg[0m`,
+		`[36mcyanfg[0m`,
+		`[96mcyanbfg[0m`,
+		`[46mcyanbg[0m`,
+		`[106mcyanbbg[0m`,
+		`[37mwhitefg[0m`,
+		`[97mwhitebfg[0m`,
+		`[47mwhitebg[0m`,
+		`[107mwhitebbg[0m`,
+		`[39mdefaultfg[0m`,
+		`[49mdefaultbg[0m`,
+		`[38;5;178mrgb8=fg:178[0m`,
+		`[48;5;57mrgb8=bg:57[0m`,
+		`[38;2;178;12;240mrgb24=fg:178:12:240[0m`,
+		`[48;2;57;124;12mrgb24=bg:57:124:12[0m`,
+	)
 }
 
-// NOTE: Use os.Args for unit testing in order to call run() in the example
-// Args handles command-line argument parsing.
 func args() {
-	for _, flagName := range []string{"s", "styles"} {
+	for _, flagName := range []string{"s", "style"} {
 		flag.Func(
 			flagName,
 			"list of styles and colors to apply to text",
@@ -89,57 +153,80 @@ func args() {
 			},
 		)
 	}
-	flag.Usage = func() { fmt.Print(usage) }
+	flag.Usage = func() { fmt.Print(usage()) }
 	flag.Parse()
-
-	if len(flag.Args()) > 0 {
-		for _, fn := range flag.Args() {
-			func() {
-				f, err := os.Open(fn)
-				defer f.Close()
-
-				if err != nil {
-					fmt.Fprintf(os.Stderr, err.Error())
-					os.Exit(exitFailure)
-				}
-				t, err := ioutil.ReadAll(f)
-				if err != nil {
-					fmt.Fprintf(os.Stderr, err.Error())
-					os.Exit(exitFailure)
-				}
-				text = append(text, t...)
-			}()
-		}
-	} else {
-		t, err := ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
-			os.Exit(exitFailure)
-		}
-		text = append(text, t...)
-	}
 }
 
-// TODO: Add a reference on `go doc tcols` in the `README.md` file.
+func readText(bb *[]byte, rr ...io.Reader) error {
+	if len(rr) == 0 {
+		return nil
+	}
+	for _, r := range rr {
+		b, err := ioutil.ReadAll(r)
+		if err != nil {
+			return err
+		}
+		*bb = append(*bb, b...)
+	}
+	return nil
+}
+
+func argsFiles() ([]io.Reader, func(), error) {
+	var files []io.Reader
+	closer := func() {
+		for _, f := range files {
+			switch t := f.(type) {
+			case io.Closer:
+				t.Close()
+			}
+		}
+	}
+	for _, fname := range flag.Args() {
+		f, err := os.Open(fname)
+		if err != nil {
+			return files, closer, err
+		}
+		files = append(files, f)
+	}
+	return files, closer, nil
+}
+
+func fail(w io.Writer, e error) {
+	fmt.Fprintf(w, e.Error())
+	os.Exit(exitFailure)
+}
+
 func main() {
 	args()
+	text := make([]byte, 0, 64)
+	if len(flag.Args()) > 0 {
+		files, closer, err := argsFiles()
+		defer closer()
+		if err != nil {
+			fail(os.Stderr, err)
+		}
+		err = readText(&text, files...)
+		if err != nil {
+			fail(os.Stderr, err)
+		}
+	} else {
+		err := readText(&text, os.Stdin)
+		if err != nil {
+			fail(os.Stderr, err)
+		}
+	}
 	out := bufio.NewWriter(os.Stdout)
 	colors, err := termcols.MapColors(styles)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(exitFailure)
+		fail(os.Stderr, err)
 	}
 	output := termcols.Colorize(string(text), colors...)
-
 	_, err = out.WriteString(output)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(exitFailure)
+		fail(os.Stderr, err)
 	}
-
 	if err := out.Flush(); err != nil {
-		fmt.Fprintf(os.Stderr, err.Error())
-		os.Exit(exitFailure)
+		fail(os.Stderr, err)
 	}
 	os.Exit(exitSuccess)
 }
