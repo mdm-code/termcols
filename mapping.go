@@ -89,7 +89,7 @@ func MapColors(ss []string) ([]SgrAttr, error) {
 
 // MapColor attempts to interpret the string s as either one of the predefined
 // colors/styles or an RGB8/24 string pattern that is expected to come in the
-// one of the case-insensitve patterns listed below. Otherwise the function
+// one of the case-insensitive patterns listed below. Otherwise the function
 // returns an empty string of type SgrAttr and errMap.
 //
 //   RGB 8  : rgb8=[fg|bg]:[0-255]
