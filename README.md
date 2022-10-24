@@ -1,6 +1,34 @@
-Package termcols implements ANSI color codes that can be used to color text on
-the terminal. Different styles and foreground/background colors can be chained
-together through an intuitive package API to arrive at some cool visual
+<h1 align="center">
+  <div>
+    <img src="https://raw.githubusercontent.com/mdm-code/mdm-code.github.io/main/termcols_logo.png" alt="logo"/>
+  </div>
+</h1>
+
+<h4 align="center">Colorful text on the terminal in Go</h4>
+
+<div align="center">
+<p>
+    <a href="https://github.com/mdm-code/termcols/actions?query=workflow%3ACI">
+        <img alt="Build status" src="https://github.com/mdm-code/termcols/workflows/CI/badge.svg">
+    </a>
+    <a href="https://app.codecov.io/gh/mdm-code/termcols">
+        <img alt="Code coverage" src="https://codecov.io/gh/mdm-code/termcols/branch/main/graphs/badge.svg?branch=main">
+    </a>
+    <a href="https://opensource.org/licenses/MIT" rel="nofollow">
+        <img alt="MIT license" src="https://img.shields.io/github/license/mdm-code/termcols">
+    </a>
+    <a href="https://goreportcard.com/report/github.com/mdm-code/termcols">
+        <img alt="Go report card" src="https://goreportcard.com/badge/github.com/mdm-code/termcols">
+    </a>
+    <a href="https://pkg.go.dev/github.com/mdm-code/termcols">
+        <img alt="Go package docs" src="https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white">
+    </a>
+</p>
+</div>
+
+The `termcols` package implements ANSI color codes that can be used to color
+text on the terminal. Different styles and foreground/background colors can be
+chained together through an intuitive package API to arrive at some cool visual
 effects.
 
 The selection of style and color control sequences implemented by the package
@@ -66,6 +94,9 @@ project, can use the `tcols` terminal command:
 ```sh
 tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
 ```
+
+Type `tcols -h` to get a list of styles and colors to (1) see what is implemented
+and (2) what is supported by your terminal
 
 
 ## Development
