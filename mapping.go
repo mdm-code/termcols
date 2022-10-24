@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var layerMap map[string]layer = map[string]layer{"fg": FG, "bg": BG}
+var layerMap map[string]Layer = map[string]Layer{"fg": FG, "bg": BG}
 
 var colorMap map[string]SgrAttr = map[string]SgrAttr{
 	"bold":         Bold,

@@ -19,8 +19,8 @@ const (
 
 // Layer
 const (
-	FG layer = Csi + "38"
-	BG layer = Csi + "48"
+	FG Layer = Csi + "38"
+	BG Layer = Csi + "48"
 )
 
 // Reset control sequence
@@ -97,9 +97,9 @@ type SgrAttr string
 // Layer is used to specify whether the color should be applied to either
 // foreground or background. The default format for the RGB set
 // foreground/background color control sequence for 24-bit colors is
-// {layer};2;{R};{G};{B}m, and for 8-bit colors this is {layer};5;{Color}m as
+// {Layer};2;{R};{G};{B}m, and for 8-bit colors this is {Layer};5;{Color}m as
 // implemented in [Rgb8] and [Rgb24] public functions respectively.
-type layer string
+type Layer string
 
 // Colorize returns a string literal s with attrs SGR control sequences
 // prepended and the reset control sequence appended at the end. The sequence
@@ -118,7 +118,7 @@ func Colorize(s string, attrs ...SgrAttr) string {
 // background. The c parameter stands for the color. It corresponds to one of
 // the colors from a 256-color lookup table, hence the parameter should be in
 // the range [0, 255].
-func Rgb8(l layer, c uint8) SgrAttr {
+func Rgb8(l Layer, c uint8) SgrAttr {
 	seq := fmt.Sprintf("%s;5;%dm", l, c)
 	return SgrAttr(seq)
 }
@@ -128,7 +128,7 @@ func Rgb8(l layer, c uint8) SgrAttr {
 // or background. The next three r, g, b parameters correspond to a 24-bit
 // color sequence split into three 8-bit sets. RGB parameters should be in the
 // range [0, 255].
-func Rgb24(l layer, r, g, b uint8) SgrAttr {
+func Rgb24(l Layer, r, g, b uint8) SgrAttr {
 	seq := fmt.Sprintf("%s;2;%d;%d;%dm", l, r, g, b)
 	return SgrAttr(seq)
 }

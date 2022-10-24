@@ -109,7 +109,7 @@ func TestColorize(t *testing.T) {
 
 func TestRgb8(t *testing.T) {
 	cases := []struct {
-		l      layer
+		l      Layer
 		col    uint8
 		expOut SgrAttr
 	}{
@@ -131,7 +131,7 @@ func TestRgb8(t *testing.T) {
 
 func TestRgb24(t *testing.T) {
 	cases := []struct {
-		l       layer
+		l       Layer
 		r, g, b uint8
 		expOut  SgrAttr
 	}{
