@@ -4,8 +4,34 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 	"testing"
 )
+
+func TestMapColors(t *testing.T) {
+	cases := []struct {
+		colors []string
+		expOut error
+	}{
+		{[]string{}, nil},
+		{[]string{"bluefg", "bold"}, nil},
+		{[]string{"blink", "redbg"}, nil},
+		{[]string{"italic", "strike", "rgb8=fg:255"}, nil},
+		{[]string{"rgb24=bg:255:255:255", "blink", "magentafg"}, nil},
+
+		// Failing colors
+		{[]string{"italics", "strike"}, errMap},
+		{[]string{"italic", "redgb"}, errMap},
+		{[]string{"italic", "rgb8=gf:240"}, errMap},
+	}
+	for _, c := range cases {
+		t.Run(strings.Join(c.colors, "-"), func(t *testing.T) {
+			if _, out := MapColors(c.colors); out != c.expOut {
+				t.Errorf("Have: %t, want %t", out, c.expOut)
+			}
+		})
+	}
+}
 
 func TestMapColor(t *testing.T) {
 	cases := []struct {
@@ -115,6 +141,24 @@ func TestCollateRgb8(t *testing.T) {
 		{re, "rgb8=fg:", false},
 		{re, "rgb8=bg:black", false},
 		{re, "rgb8=fg:256", false},
+
+		// NOTE: Made-up regular expressions to trigger collation errors
+		{regexp.MustCompile(`.*`), "", false}, // missing layer field
+		{
+			regexp.MustCompile(`rgb8=(?P<layer>gb):(?P<color>red)`),
+			"rgb8=gb:red",
+			false,
+		}, // `gb` is not a valid layer on the layerMap
+		{
+			regexp.MustCompile(`rgb8=(?P<layer>fg|bg):(?P<color>red)`),
+			"rgb8=fg:red",
+			false,
+		}, // red cannot be converted to an int
+		{
+			regexp.MustCompile(`rgb8=(?P<layer>bg):.*`),
+			"rgb8=bg:missing",
+			false,
+		}, // missing color field
 	}
 	for _, c := range cases {
 		t.Run(c.str, func(t *testing.T) {
@@ -140,6 +184,72 @@ func TestCollateRgb24(t *testing.T) {
 		{re, "rgb24=gb:255:255:255", false},
 		{re, "rgb24=fg:", false},
 		{re, "rgb24=fg:312:120:2", false},
+		{re, "rgb24=fg:120:120:257", false},
+
+		// NOTE: Made-up regular expressions to trigger collation errors
+		{regexp.MustCompile(`.*`), "", false}, // missing layer field
+		{
+			regexp.MustCompile(`rgb24=(?P<layer>gb):.*`),
+			"rgb24=gb:red",
+			false,
+		}, // `gb` is not a valid layer on the layerMap
+		{
+			regexp.MustCompile(
+				`rgb24=(?P<layer>fg|bg):(?P<r>red)`,
+			),
+			"rgb24=fg:red",
+			false,
+		}, //  red cannot be converted to an int
+		{
+			regexp.MustCompile(
+				`rgb24=(?P<layer>fg|bg):(?P<g>green)`,
+			),
+			"rgb24=fg:green",
+			false,
+		}, // green cannot be converted to an int
+		{
+			regexp.MustCompile(
+				`rgb24=(?P<layer>fg|bg):(?P<b>blue)`,
+			),
+			"rgb24=fg:blue",
+			false,
+		}, // blue cannot be converted to an int
+		{
+			regexp.MustCompile(`rgb24=(?P<layer>bg):.*`),
+			"rgb24=bg:255:255:255",
+			false,
+		}, // missing r field
+		{
+			regexp.MustCompile(`rgb24=(?P<layer>bg):(?P<r>\d{1,3}):.*`),
+			"rgb24=bg:255:255:255",
+			false,
+		}, // missing g field
+		{
+			regexp.MustCompile(
+				`rgb24=(?P<layer>bg):(?P<r>\d{1,3}):(?P<g>\d{1,3}):.*`,
+			),
+			"rgb24=bg:255:255:255",
+			false,
+		}, // missing b field
+		{
+			regexp.MustCompile(`rgb24=(?P<layer>bg):(?P<r>red):.*`),
+			"rgb24=bg:red:255:255",
+			false,
+		}, // red cannot be converted to an int
+		{
+			regexp.MustCompile(
+				`rgb24=(?P<layer>bg):(?P<r>\d{1,3}):(?P<g>green):.*`,
+			),
+			"rgb24=bg:255:green:255",
+			false,
+		}, // green cannot be converted to an int
+		{
+			regexp.MustCompile(
+				`rgb24=(?P<layer>bg):(?P<r>\d{1,3}):(?P<g>\d{1,3}):(?P<b>blue)`,
+			),
+			"rgb24=bg:255:255:blue",
+			false,
+		}, // blue cannot be converted to an int
 	}
 	for _, c := range cases {
 		t.Run(c.str, func(t *testing.T) {
