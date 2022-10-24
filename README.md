@@ -45,7 +45,7 @@ The same applies to 8-bit and 24-bit colors: there is no guarantee that these
 escape sequences are supported will be rendered properly on some terminals.
 Results may vary, so it is good practice to test it first for compatibility.
 
-Consult the [package documentation](https://pkg.go.dev/github.com/mdm-code/tercols)
+Consult the [package documentation](https://pkg.go.dev/github.com/mdm-code/termcols)
 or see [Usage](#usage) section below to check how to use the public API of the
 `termcols` package.
 
@@ -94,7 +94,7 @@ Aside from using the `termcols` package API that can be used in your Go
 project, can use the `tcols` terminal command:
 
 ```sh
-tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
+tcols -style 'redfg underline rgb24=bg:120:255:54' < <(echo -n 'Hello, world!')
 ```
 
 Type `tcols -h` to get a list of styles and colors to (1) see what is implemented
