@@ -89,9 +89,9 @@ const (
 	WhiteBbg   SgrAttr = Csi + "107m"
 )
 
-// SgrAttr corresponds to a SGR (Select Graphic Rendition) control sequence
-// sets display attributes. Each SGR parameter remains active until it is reset
-// with the `CSI 0m` [RESET] control sequence.
+// SgrAttr corresponds to an SGR (Select Graphic Rendition) control sequence.
+// It sets display attributes. Each SGR parameter remains active until it is
+// reset with the `CSI 0m` [RESET] control sequence.
 type SgrAttr string
 
 // Layer is used to specify whether the color should be applied to either
