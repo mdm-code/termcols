@@ -98,7 +98,7 @@ tcols -style 'redfg underline rgb24=bg:120:255:54' < <(echo -n 'Hello, world!')
 ```
 
 Type `tcols -h` to get a list of styles and colors to (1) see what is implemented
-and (2) what is supported by your terminal
+and (2) what is supported by your terminal.
 
 
 ## Development
