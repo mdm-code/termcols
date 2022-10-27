@@ -138,36 +138,12 @@ func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	if !ok {
 		return "", false
 	}
-
-	c, ok := params["color"]
+	c, ok := getColor(params, "color")
 	if !ok {
-		return "", ok
-	}
-	col, err := strconv.Atoi(c)
-	if err != nil {
 		return "", false
 	}
-	if ok := validUint8(col); !ok {
-		return "", ok
-	}
-
-	result := Rgb8(l, uint8(col))
+	result := Rgb8(l, c)
 	return result, true
-}
-
-func getColor(params map[string]string, key string) (uint8, bool) {
-	val, ok := params[key]
-	if !ok {
-		return 0, false
-	}
-	col, err := strconv.Atoi(val)
-	if err != nil {
-		return 0, false
-	}
-	if ok := validUint8(col); !ok {
-		return 0, false
-	}
-	return uint8(col), true
 }
 
 // CollateRgb24 parses string s into SgrAttr using the provided regex r.
@@ -177,53 +153,19 @@ func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	if !ok {
 		return "", false
 	}
-
-	// TODO (michal): move color check to a separate function
-	// NOTE: This should make it easier to target unit tests
-	// Red
 	red, ok := getColor(params, "r")
 	if !ok {
 		return "", false
 	}
-	// cr, ok := params["r"]
-	// if !ok {
-	// 	return "", ok
-	// }
-	// rcol, err := strconv.Atoi(cr)
-	// if err != nil {
-	// 	return "", false
-	// }
-	// if ok := validUint(rcol); !ok {
-	// 	return "", ok
-	// }
-
-	// Green
-	cg, ok := params["g"]
+	green, ok := getColor(params, "g")
 	if !ok {
-		return "", ok
-	}
-	gcol, err := strconv.Atoi(cg)
-	if err != nil {
 		return "", false
 	}
-	if ok = validUint8(gcol); !ok {
-		return "", ok
-	}
-
-	// Blue
-	cb, ok := params["b"]
+	blue, ok := getColor(params, "b")
 	if !ok {
-		return "", ok
-	}
-	bcol, err := strconv.Atoi(cb)
-	if err != nil {
 		return "", false
 	}
-	if ok := validUint8(bcol); !ok {
-		return "", ok
-	}
-
-	result := Rgb24(l, red, uint8(gcol), uint8(bcol))
+	result := Rgb24(l, red, green, blue)
 	return result, true
 }
 
@@ -251,6 +193,22 @@ func getLayer(params map[string]string) (Layer, bool) {
 		return "", false
 	}
 	return l, true
+}
+
+// GetColor returns the color based on the key in the params map.
+func getColor(params map[string]string, key string) (uint8, bool) {
+	val, ok := params[key]
+	if !ok {
+		return 0, false
+	}
+	col, err := strconv.Atoi(val)
+	if err != nil {
+		return 0, false
+	}
+	if ok := validUint8(col); !ok {
+		return 0, false
+	}
+	return uint8(col), true
 }
 
 // ValidUint8 verifies if the integer i falls in range [0, 255] of uint8.
