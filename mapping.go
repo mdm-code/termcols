@@ -134,14 +134,9 @@ func matchRegexp(r *regexp.Regexp, val any) bool {
 // CollateRgb8 parses string s into SgrAttr using the provided regex r.
 func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	params := getParams(r, s)
-	lr, ok := params["layer"]
+	l, ok := getLayer(params)
 	if !ok {
-		return "", ok
-	}
-	lr = strings.ToLower(lr)
-	l, ok := layerMap[lr]
-	if !ok {
-		return "", ok
+		return "", false
 	}
 
 	c, ok := params["color"]
