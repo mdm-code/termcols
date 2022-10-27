@@ -335,3 +335,31 @@ func TestGetLayer(t *testing.T) {
 		})
 	}
 }
+
+func TestGetColor(t *testing.T) {
+	cases := []struct {
+		name   string
+		params map[string]string
+		key    string
+		okExp  bool
+	}{
+		{"empty-parms", map[string]string{}, "color", false},
+		{"mismatched-key-color", map[string]string{"r": "48"}, "color", false},
+		{"mismatched-key-r", map[string]string{"g": "248"}, "r", false},
+		{"mismatched-key-g", map[string]string{"b": "143"}, "g", false},
+		{"mismatched-key-b", map[string]string{"r": "0"}, "b", false},
+		{"color-not-int", map[string]string{"r": "red"}, "r", false},
+		{"invalid-uint8", map[string]string{"color": "278"}, "color", false},
+		{"valid-color", map[string]string{"color": "12"}, "color", true},
+		{"valid-r", map[string]string{"r": "234"}, "r", true},
+		{"valid-g", map[string]string{"g": "197"}, "g", true},
+		{"valid-b", map[string]string{"b": "65"}, "b", true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if _, ok := getColor(c.params, c.key); ok != c.okExp {
+				t.Errorf("Have: %t; want %t", ok, c.okExp)
+			}
+		})
+	}
+}
