@@ -308,7 +308,7 @@ func TestValidUint(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.str, func(t *testing.T) {
-			if ok := validUint(c.i); ok != c.okExp {
+			if ok := validUint8(c.i); ok != c.okExp {
 				t.Errorf("Have %t; want: %t", ok, c.okExp)
 			}
 		})

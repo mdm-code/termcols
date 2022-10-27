@@ -147,7 +147,7 @@ func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	if err != nil {
 		return "", false
 	}
-	if ok := validUint(col); !ok {
+	if ok := validUint8(col); !ok {
 		return "", ok
 	}
 
@@ -164,7 +164,7 @@ func getColor(params map[string]string, key string) (uint8, bool) {
 	if err != nil {
 		return 0, false
 	}
-	if ok := validUint(col); !ok {
+	if ok := validUint8(col); !ok {
 		return 0, false
 	}
 	return uint8(col), true
@@ -206,7 +206,7 @@ func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	if err != nil {
 		return "", false
 	}
-	if ok = validUint(gcol); !ok {
+	if ok = validUint8(gcol); !ok {
 		return "", ok
 	}
 
@@ -219,7 +219,7 @@ func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	if err != nil {
 		return "", false
 	}
-	if ok := validUint(bcol); !ok {
+	if ok := validUint8(bcol); !ok {
 		return "", ok
 	}
 
@@ -253,8 +253,8 @@ func getLayer(params map[string]string) (Layer, bool) {
 	return l, true
 }
 
-// ValidUint verifies if the integer i falls in range [0, 255] of uint8.
-func validUint(i int) bool {
+// ValidUint8 verifies if the integer i falls in range [0, 255] of uint8.
+func validUint8(i int) bool {
 	if i >= 0 && i <= 255 {
 		return true
 	}
