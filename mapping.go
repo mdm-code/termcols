@@ -163,16 +163,15 @@ func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 // CollateRgb24 parses string s into SgrAttr using the provided regex r.
 func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	params := getParams(r, s)
-	lr, ok := params["layer"]
+
+	// TODO (michal): move the layer check to a separate function
+	l, ok := getLayer(params)
 	if !ok {
-		return "", ok
-	}
-	lr = strings.ToLower(lr)
-	l, ok := layerMap[lr]
-	if !ok {
-		return "", ok
+		return "", false
 	}
 
+	// TODO (michal): move color check to a separate function
+	// NOTE: This should make it easier to target unit tests
 	// Red
 	cr, ok := params["r"]
 	if !ok {
@@ -226,6 +225,20 @@ func getParams(r *regexp.Regexp, s string) map[string]string {
 		}
 	}
 	return result
+}
+
+// GetLayer returns Layer based on the key in the params map.
+func getLayer(params map[string]string) (Layer, bool) {
+	lr, ok := params["layer"]
+	if !ok {
+		return "", false
+	}
+	lr = strings.ToLower(lr)
+	l, ok := layerMap[lr]
+	if !ok {
+		return "", false
+	}
+	return l, true
 }
 
 // ValidUint verifies if the integer i falls in range [0, 255] of uint8.
