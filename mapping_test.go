@@ -314,3 +314,24 @@ func TestValidUint(t *testing.T) {
 		})
 	}
 }
+
+func TestGetLayer(t *testing.T) {
+	cases := []struct {
+		name   string
+		params map[string]string
+		okExp  bool
+	}{
+		{"missing-param", map[string]string{"color": "redfg"}, false},
+		{"empty-params", map[string]string{}, false},
+		{"unknown-layer", map[string]string{"layer": "background"}, false},
+		{"layer-bg", map[string]string{"layer": "bg"}, true},
+		{"layer-fg", map[string]string{"layer": "fg"}, true},
+	}
+	for _, c := range cases {
+		t.Run("", func(t *testing.T) {
+			if _, ok := getLayer(c.params); ok != c.okExp {
+				t.Errorf("Have %t; want %t", ok, c.okExp)
+			}
+		})
+	}
+}
