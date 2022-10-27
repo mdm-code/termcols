@@ -155,11 +155,24 @@ func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	return result, true
 }
 
+func getColor(params map[string]string, key string) (uint8, bool) {
+	val, ok := params[key]
+	if !ok {
+		return 0, false
+	}
+	col, err := strconv.Atoi(val)
+	if err != nil {
+		return 0, false
+	}
+	if ok := validUint(col); !ok {
+		return 0, false
+	}
+	return uint8(col), true
+}
+
 // CollateRgb24 parses string s into SgrAttr using the provided regex r.
 func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	params := getParams(r, s)
-
-	// TODO (michal): move the layer check to a separate function
 	l, ok := getLayer(params)
 	if !ok {
 		return "", false
@@ -168,17 +181,21 @@ func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	// TODO (michal): move color check to a separate function
 	// NOTE: This should make it easier to target unit tests
 	// Red
-	cr, ok := params["r"]
+	red, ok := getColor(params, "r")
 	if !ok {
-		return "", ok
-	}
-	rcol, err := strconv.Atoi(cr)
-	if err != nil {
 		return "", false
 	}
-	if ok := validUint(rcol); !ok {
-		return "", ok
-	}
+	// cr, ok := params["r"]
+	// if !ok {
+	// 	return "", ok
+	// }
+	// rcol, err := strconv.Atoi(cr)
+	// if err != nil {
+	// 	return "", false
+	// }
+	// if ok := validUint(rcol); !ok {
+	// 	return "", ok
+	// }
 
 	// Green
 	cg, ok := params["g"]
@@ -206,7 +223,7 @@ func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 		return "", ok
 	}
 
-	result := Rgb24(l, uint8(rcol), uint8(gcol), uint8(bcol))
+	result := Rgb24(l, red, uint8(gcol), uint8(bcol))
 	return result, true
 }
 
