@@ -44,33 +44,7 @@ const (
 
 var (
 	styles []string
-)
-
-type (
-	exitCode = int
-	exitFunc func(exitCode)
-)
-
-type failer struct {
-	w    io.Writer
-	fn   exitFunc
-	code exitCode
-	mu   sync.Locker
-}
-
-func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
-	return failer{w, fn, code, &sync.Mutex{}}
-}
-
-func (f *failer) fail(e error) (exitFunc, exitCode) {
-	f.mu.Lock()
-	fmt.Fprintf(f.w, e.Error())
-	f.mu.Unlock()
-	return f.fn, f.code
-}
-
-func usage() string {
-	s := `tcols - add color to text on the terminal
+	usage  = fmt.Sprintf(`tcols - add color to text on the terminal
 
 Tcols reads text from a file and writes the colorized text to the standard
 output.
@@ -113,9 +87,7 @@ Rgb8:
 	%s %s
 Rgb24:
 	%s %s
-`
-	return fmt.Sprintf(
-		s,
+`,
 		`[1mbold[0m`,
 		`[2mfaint[0m`,
 		`[3mitalic[0m`,
@@ -164,6 +136,29 @@ Rgb24:
 		`[38;2;178;12;240mrgb24=fg:178:12:240[0m`,
 		`[48;2;57;124;12mrgb24=bg:57:124:12[0m`,
 	)
+)
+
+type (
+	exitCode = int
+	exitFunc func(exitCode)
+)
+
+type failer struct {
+	w    io.Writer
+	fn   exitFunc
+	code exitCode
+	mu   sync.Locker
+}
+
+func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
+	return failer{w, fn, code, &sync.Mutex{}}
+}
+
+func (f *failer) fail(e error) (exitFunc, exitCode) {
+	f.mu.Lock()
+	fmt.Fprintf(f.w, e.Error())
+	f.mu.Unlock()
+	return f.fn, f.code
 }
 
 func args() {
@@ -177,7 +172,7 @@ func args() {
 			},
 		)
 	}
-	flag.Usage = func() { fmt.Print(usage()) }
+	flag.Usage = func() { fmt.Print(usage) }
 	flag.Parse()
 }
 
