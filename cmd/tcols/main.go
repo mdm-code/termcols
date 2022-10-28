@@ -32,18 +32,42 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/mdm-code/termcols"
 )
 
 const (
-	exitSuccess = iota
+	exitSuccess exitCode = iota
 	exitFailure
 )
 
 var (
 	styles []string
 )
+
+type (
+	exitCode = int
+	exitFunc func(exitCode)
+)
+
+type failer struct {
+	w    io.Writer
+	fn   exitFunc
+	code exitCode
+	mu   sync.Locker
+}
+
+func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
+	return failer{w, fn, code, &sync.Mutex{}}
+}
+
+func (f *failer) fail(e error) (exitFunc, exitCode) {
+	f.mu.Lock()
+	fmt.Fprintf(f.w, e.Error())
+	f.mu.Unlock()
+	return f.fn, f.code
+}
 
 func usage() string {
 	s := `tcols - add color to text on the terminal
@@ -182,7 +206,7 @@ func argsFiles() ([]io.Reader, func(), error) {
 		}
 	}
 	for _, fname := range flag.Args() {
-		f, err := os.Open(fname)
+		f, err := os.OpenFile(fname, os.O_RDONLY, 0)
 		if err != nil {
 			return files, closer, err
 		}
@@ -191,42 +215,44 @@ func argsFiles() ([]io.Reader, func(), error) {
 	return files, closer, nil
 }
 
-func fail(w io.Writer, e error) {
-	fmt.Fprintf(w, e.Error())
-	os.Exit(exitFailure)
-}
-
 func main() {
 	args()
+	f := newFailer(os.Stderr, os.Exit, exitFailure)
 	text := make([]byte, 0, 64)
 	if len(flag.Args()) > 0 {
 		files, closer, err := argsFiles()
 		defer closer()
 		if err != nil {
-			fail(os.Stderr, err)
+			exit, code := f.fail(err)
+			exit(code)
 		}
 		err = readText(&text, files...)
 		if err != nil {
-			fail(os.Stderr, err)
+			exit, code := f.fail(err)
+			exit(code)
 		}
 	} else {
 		err := readText(&text, os.Stdin)
 		if err != nil {
-			fail(os.Stderr, err)
+			exit, code := f.fail(err)
+			exit(code)
 		}
 	}
 	out := bufio.NewWriter(os.Stdout)
 	colors, err := termcols.MapColors(styles)
 	if err != nil {
-		fail(os.Stderr, err)
+		exit, code := f.fail(err)
+		exit(code)
 	}
 	output := termcols.Colorize(string(text), colors...)
 	_, err = out.WriteString(output)
 	if err != nil {
-		fail(os.Stderr, err)
+		exit, code := f.fail(err)
+		exit(code)
 	}
 	if err := out.Flush(); err != nil {
-		fail(os.Stderr, err)
+		exit, code := f.fail(err)
+		exit(code)
 	}
 	os.Exit(exitSuccess)
 }
