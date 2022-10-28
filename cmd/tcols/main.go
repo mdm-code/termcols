@@ -141,24 +141,24 @@ Rgb24:
 type (
 	exitCode = int
 	exitFunc func(exitCode)
+
+	failer struct {
+		w    io.Writer
+		fn   exitFunc
+		code exitCode
+		mu   sync.Locker
+	}
 )
-
-type failer struct {
-	w    io.Writer
-	fn   exitFunc
-	code exitCode
-	mu   sync.Locker
-}
-
-func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
-	return failer{w, fn, code, &sync.Mutex{}}
-}
 
 func (f *failer) fail(e error) (exitFunc, exitCode) {
 	f.mu.Lock()
 	fmt.Fprintf(f.w, e.Error())
 	f.mu.Unlock()
 	return f.fn, f.code
+}
+
+func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
+	return failer{w, fn, code, &sync.Mutex{}}
 }
 
 func args() {
