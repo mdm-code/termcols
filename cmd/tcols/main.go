@@ -26,6 +26,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -43,8 +44,9 @@ const (
 )
 
 var (
-	styles []string
-	usage  = fmt.Sprintf(`tcols - add color to text on the terminal
+	styles     []string
+	errParsing error = errors.New("failed to parse CLI arguments")
+	usage            = fmt.Sprintf(`tcols - add color to text on the terminal
 
 Tcols reads text from a file and writes the colorized text to the standard
 output.
@@ -161,19 +163,24 @@ func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
 	return failer{w, fn, code, &sync.Mutex{}}
 }
 
-func args() {
-	for _, flagName := range []string{"s", "style"} {
-		flag.Func(
-			flagName,
+func parse(args []string) error {
+	if len(args) == 0 {
+		return errParsing
+	}
+	fSet := flag.NewFlagSet("tcols", flag.ExitOnError)
+	for _, fName := range []string{"s", "styles"} {
+		fSet.Func(
+			fName,
 			"list of styles and colors to apply to text",
 			func(v string) error {
-				styles = strings.Fields(v)
+				styles = append(styles, strings.Fields(v)...)
 				return nil
 			},
 		)
 	}
-	flag.Usage = func() { fmt.Print(usage) }
-	flag.Parse()
+	fSet.Usage = func() { fmt.Printf(usage) }
+	err := fSet.Parse(args)
+	return err
 }
 
 func readText(bb *[]byte, rr ...io.Reader) error {
@@ -211,8 +218,14 @@ func argsFiles() ([]io.Reader, func(), error) {
 }
 
 func main() {
-	args()
 	f := newFailer(os.Stderr, os.Exit, exitFailure)
+
+	err := parse(os.Args[1:])
+	if err != nil {
+		exit, code := f.fail(err)
+		exit(code)
+	}
+
 	text := make([]byte, 0, 64)
 	if len(flag.Args()) > 0 {
 		files, closer, err := argsFiles()

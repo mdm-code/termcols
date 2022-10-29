@@ -46,6 +46,26 @@ func TestFail(t *testing.T) {
 	}
 }
 
-func TestArgs(t *testing.T) {
-	args()
+func TestCliParse(t *testing.T) {
+	cases := []struct {
+		name string
+		args []string
+		err  error
+	}{
+		{"pass-01", []string{"-styles", "redfg bluefg"}, nil},
+		{"pass-02", []string{"-s", "strike rgb24=fg:242:121:64"}, nil},
+		{"pass-03", []string{"-s", "yellowbg", "--styles", "bluefg"}, nil},
+
+		{"fail-01", []string{}, errParsing},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := parse(c.args)
+			if !errors.Is(err, c.err) {
+				t.Errorf("Have %T; want %T", err, c.err)
+			}
+		})
+	}
+}
+
 }
