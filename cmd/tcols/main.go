@@ -46,6 +46,7 @@ const (
 var (
 	styles     []string
 	errParsing error = errors.New("failed to parse CLI arguments")
+	errPiping  error = errors.New("cannot read/write on nil interfaces")
 	usage            = fmt.Sprintf(`tcols - add color to text on the terminal
 
 Tcols reads text from a file and writes the colorized text to the standard
@@ -181,6 +182,13 @@ func parse(args []string) error {
 	fSet.Usage = func() { fmt.Printf(usage) }
 	err := fSet.Parse(args)
 	return err
+}
+
+func pipe(r io.Reader, w io.Writer) error {
+	if r == nil && w == nil {
+		return errPiping
+	}
+	return nil
 }
 
 func readText(bb *[]byte, rr ...io.Reader) error {
