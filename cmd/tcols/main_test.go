@@ -1,29 +1,32 @@
 package main
 
 import (
+	"errors"
+	"io"
 	"os"
 	"testing"
 )
-
-// Unit tests
-// ==========
-// 1. Add tests for readText with reflections on the buffer pointed here
-// 2. Check how to mock OpenFile or Open in Go
-// 3. Test the fail function with ExampleTests
-// 4. Create Run command -- call it for each file in argsFiles or for os.Stdin
-// 5. This might help me run colorize with goroutines
 
 type mockWriter struct {
 	buff []byte
 }
 
-func (m *mockWriter) Write(p []byte) (int, error) {
-	m.buff = append(m.buff, p...)
+type mockReader struct {
+	text []byte
+}
+
+func (w *mockWriter) Write(p []byte) (int, error) {
+	w.buff = append(w.buff, p...)
 	return 0, nil
 }
 
-func (m *mockWriter) String() string {
-	return string(m.buff)
+func (w *mockWriter) String() string {
+	return string(w.buff)
+}
+
+func (r *mockReader) Read(p []byte) (int, error) {
+	p = append(p, []byte("Colorize me!")...)
+	return 0, nil
 }
 
 func TestFail(t *testing.T) {
@@ -68,4 +71,35 @@ func TestCliParse(t *testing.T) {
 	}
 }
 
+// TestPipeText tests a single, single-threaded pass of text data.
+func TestPipeText(t *testing.T) {
+	cases := []struct {
+		r   io.Reader
+		w   io.Writer
+		err error
+	}{
+		{&mockReader{}, &mockWriter{}, nil},
+		{nil, nil, errPiping},
+	}
+	for _, c := range cases {
+		err := pipe(c.r, c.w)
+		if !errors.Is(err, c.err) {
+			t.Errorf("Have %T; want %T", err, c.err)
+		}
+	}
+	/*
+		NOTE: the thread-safe option of the io.Writer should have sync.Mutex
+
+		   func pipe(r io.Reader, w io.Writer) err {
+		   	   if r == nil && w == nil {
+		   	   	   error out
+		   	   }
+			   in := ioutil.ReadAll(r)
+			   if err != nil {
+			   	   error out
+			   }
+			   colored, _ := termcols.Colorize(strings(in), colors...)
+			   w.Write(colorizedTxt)
+		   }
+	*/
 }
