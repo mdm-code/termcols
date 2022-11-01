@@ -219,7 +219,7 @@ func pipe(r io.Reader, w io.Writer, styles []string) error {
 	}
 	text, err := ioutil.ReadAll(r)
 	if err != nil {
-		return err
+		return errPiping
 	}
 	colors, err := termcols.MapColors(styles)
 	if err != nil {
@@ -228,7 +228,7 @@ func pipe(r io.Reader, w io.Writer, styles []string) error {
 	colored := termcols.Colorize(string(text), colors...)
 	_, err = io.WriteString(w, colored)
 	if err != nil {
-		return err
+		return errPiping
 	}
 	return nil
 }

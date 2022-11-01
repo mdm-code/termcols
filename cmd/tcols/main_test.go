@@ -2,22 +2,28 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"testing"
+
+	"github.com/mdm-code/termcols"
 )
 
-type mockWriter struct {
-	buff []byte
-}
-
-type mockReader struct {
-	text []byte
-}
+type (
+	mockWriter struct{ buff []byte }
+	failWriter struct{}
+	mockReader struct{ text []byte }
+	failReader struct{}
+)
 
 func (w *mockWriter) Write(p []byte) (int, error) {
 	w.buff = append(w.buff, p...)
 	return 0, nil
+}
+
+func (w *failWriter) Write(p []byte) (int, error) {
+	return 0, fmt.Errorf("errored")
 }
 
 func (w *mockWriter) String() string {
@@ -27,6 +33,10 @@ func (w *mockWriter) String() string {
 func (r *mockReader) Read(p []byte) (int, error) {
 	p = append(p, []byte("Colorize me!")...)
 	return 0, io.EOF
+}
+
+func (r *failReader) Read(p []byte) (int, error) {
+	return 0, fmt.Errorf("errored")
 }
 
 func TestFail(t *testing.T) {
@@ -83,6 +93,9 @@ func TestPipeText(t *testing.T) {
 	}{
 		{&mockReader{}, &mockWriter{}, []string{}, nil},
 		{nil, nil, []string{}, errPiping},
+		{&mockReader{}, &mockWriter{}, []string{"blue"}, termcols.ErrMap},
+		{&failReader{}, &mockWriter{}, []string{}, errPiping},
+		{&mockReader{}, &failWriter{}, []string{}, errPiping},
 	}
 	for _, c := range cases {
 		err := pipe(c.r, c.w, c.s)
