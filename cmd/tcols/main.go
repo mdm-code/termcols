@@ -143,6 +143,7 @@ Rgb24:
 
 type (
 	exitCode = int
+	openFn   = func([]string, func(string) (*os.File, error)) ([]io.Reader, func(), error)
 	exitFunc func(exitCode)
 
 	failer struct {
@@ -164,7 +165,7 @@ func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
 	return failer{w, fn, code, &sync.Mutex{}}
 }
 
-func parse(args []string, open func([]string, func(string) (*os.File, error)) ([]io.Reader, func(), error)) ([]io.Reader, func(), error) {
+func parse(args []string, open openFn) ([]io.Reader, func(), error) {
 	if len(args) == 0 {
 		return []io.Reader{}, func() {}, errParsing
 	}
