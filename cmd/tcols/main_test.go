@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/mdm-code/termcols"
@@ -136,6 +137,30 @@ func TestOpen(t *testing.T) {
 			defer closer()
 			if err != c.err {
 				t.Errorf("Have %T; want %T", err, c.err)
+			}
+		})
+	}
+}
+
+func TestRun(t *testing.T) {
+	f := func(fname []string, f func(string) (*os.File, error)) ([]io.Reader, func(), error) {
+		return []io.Reader{strings.NewReader("hello")}, func() {}, nil
+	}
+	cases := []struct {
+		name string
+		args []string
+		fn   openFn
+		err  error
+	}{
+		{"pass", []string{"-s", "greenbg yellowfg bold", "1.pyc", "2.c"}, f, nil},
+		{"fail", []string{}, f, errParsing},
+		{"fail", []string{"--styles", "wacky", "hello.py"}, f, termcols.ErrMap},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			err := run(c.args, c.fn)
+			if !errors.Is(err, c.err) {
+				t.Errorf("Have %v; want %v", err, c.err)
 			}
 		})
 	}

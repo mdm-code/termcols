@@ -233,16 +233,12 @@ func pipe(r io.Reader, w io.Writer, styles []string) error {
 	return nil
 }
 
-func main() {
-	fl := newFailer(os.Stderr, os.Exit, exitFailure)
-
-	files, closer, err := parse(os.Args[1:], open)
+func run(args []string, fn openFn) error {
+	files, closer, err := parse(args, fn)
 	defer closer()
 	if err != nil {
-		exit, code := fl.fail(err)
-		exit(code)
+		return err
 	}
-
 	out := bufio.NewWriter(os.Stdout)
 
 	// TODO (michal): do a goroutine version of this code block; add some kind
@@ -250,13 +246,20 @@ func main() {
 	for _, f := range files {
 		err := pipe(f, out, styles)
 		if err != nil {
-			exit, code := fl.fail(err)
-			exit(code)
+			return err
 		}
 	}
-
 	if err := out.Flush(); err != nil {
-		exit, code := fl.fail(err)
+		return err
+	}
+	return nil
+}
+
+func main() {
+	f := newFailer(os.Stderr, os.Exit, exitFailure)
+	err := run(os.Args[1:], open)
+	if err != nil {
+		exit, code := f.fail(err)
 		exit(code)
 	}
 	os.Exit(exitSuccess)
