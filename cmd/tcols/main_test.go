@@ -26,7 +26,7 @@ func (w *mockWriter) String() string {
 
 func (r *mockReader) Read(p []byte) (int, error) {
 	p = append(p, []byte("Colorize me!")...)
-	return 0, nil
+	return 0, io.EOF
 }
 
 func TestFail(t *testing.T) {
@@ -63,7 +63,9 @@ func TestCliParse(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			err := parse(c.args)
+			_, _, err := parse(c.args, func([]string) ([]io.Reader, func(), error) {
+				return []io.Reader{}, func() {}, nil
+			})
 			if !errors.Is(err, c.err) {
 				t.Errorf("Have %T; want %T", err, c.err)
 			}
@@ -76,30 +78,16 @@ func TestPipeText(t *testing.T) {
 	cases := []struct {
 		r   io.Reader
 		w   io.Writer
+		s   []string
 		err error
 	}{
-		{&mockReader{}, &mockWriter{}, nil},
-		{nil, nil, errPiping},
+		{&mockReader{}, &mockWriter{}, []string{}, nil},
+		{nil, nil, []string{}, errPiping},
 	}
 	for _, c := range cases {
-		err := pipe(c.r, c.w)
+		err := pipe(c.r, c.w, c.s)
 		if !errors.Is(err, c.err) {
 			t.Errorf("Have %T; want %T", err, c.err)
 		}
 	}
-	/*
-		NOTE: the thread-safe option of the io.Writer should have sync.Mutex
-
-		   func pipe(r io.Reader, w io.Writer) err {
-		   	   if r == nil && w == nil {
-		   	   	   error out
-		   	   }
-			   in := ioutil.ReadAll(r)
-			   if err != nil {
-			   	   error out
-			   }
-			   colored, _ := termcols.Colorize(strings(in), colors...)
-			   w.Write(colorizedTxt)
-		   }
-	*/
 }

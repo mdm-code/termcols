@@ -164,13 +164,13 @@ func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
 	return failer{w, fn, code, &sync.Mutex{}}
 }
 
-func parse(args []string) error {
+func parse(args []string, open func([]string) ([]io.Reader, func(), error)) ([]io.Reader, func(), error) {
 	if len(args) == 0 {
-		return errParsing
+		return []io.Reader{}, func() {}, errParsing
 	}
-	fSet := flag.NewFlagSet("tcols", flag.ExitOnError)
+	fs := flag.NewFlagSet("tcols", flag.ExitOnError)
 	for _, fName := range []string{"s", "styles"} {
-		fSet.Func(
+		fs.Func(
 			fName,
 			"list of styles and colors to apply to text",
 			func(v string) error {
@@ -179,33 +179,18 @@ func parse(args []string) error {
 			},
 		)
 	}
-	fSet.Usage = func() { fmt.Printf(usage) }
-	err := fSet.Parse(args)
-	return err
+	fs.Usage = func() { fmt.Printf(usage) }
+	err := fs.Parse(args)
+	if err != nil {
+		return []io.Reader{}, func() {}, err
+	}
+	if len(fs.Args()) > 0 {
+		return open(fs.Args())
+	}
+	return []io.Reader{os.Stdin}, func() {}, nil
 }
 
-func pipe(r io.Reader, w io.Writer) error {
-	if r == nil && w == nil {
-		return errPiping
-	}
-	return nil
-}
-
-func readText(bb *[]byte, rr ...io.Reader) error {
-	if len(rr) == 0 {
-		return nil
-	}
-	for _, r := range rr {
-		b, err := ioutil.ReadAll(r)
-		if err != nil {
-			return err
-		}
-		*bb = append(*bb, b...)
-	}
-	return nil
-}
-
-func argsFiles() ([]io.Reader, func(), error) {
+func open(fnames []string) ([]io.Reader, func(), error) {
 	var files []io.Reader
 	closer := func() {
 		for _, f := range files {
@@ -215,8 +200,8 @@ func argsFiles() ([]io.Reader, func(), error) {
 			}
 		}
 	}
-	for _, fname := range flag.Args() {
-		f, err := os.OpenFile(fname, os.O_RDONLY, 0)
+	for _, fname := range fnames {
+		f, err := os.Open(fname)
 		if err != nil {
 			return files, closer, err
 		}
@@ -225,49 +210,50 @@ func argsFiles() ([]io.Reader, func(), error) {
 	return files, closer, nil
 }
 
-func main() {
-	f := newFailer(os.Stderr, os.Exit, exitFailure)
-
-	err := parse(os.Args[1:])
+func pipe(r io.Reader, w io.Writer, styles []string) error {
+	if r == nil && w == nil {
+		return errPiping
+	}
+	text, err := ioutil.ReadAll(r)
 	if err != nil {
-		exit, code := f.fail(err)
-		exit(code)
+		return err
 	}
-
-	text := make([]byte, 0, 64)
-	if len(flag.Args()) > 0 {
-		files, closer, err := argsFiles()
-		defer closer()
-		if err != nil {
-			exit, code := f.fail(err)
-			exit(code)
-		}
-		err = readText(&text, files...)
-		if err != nil {
-			exit, code := f.fail(err)
-			exit(code)
-		}
-	} else {
-		err := readText(&text, os.Stdin)
-		if err != nil {
-			exit, code := f.fail(err)
-			exit(code)
-		}
-	}
-	out := bufio.NewWriter(os.Stdout)
 	colors, err := termcols.MapColors(styles)
 	if err != nil {
-		exit, code := f.fail(err)
-		exit(code)
+		return err
 	}
-	output := termcols.Colorize(string(text), colors...)
-	_, err = out.WriteString(output)
+	colored := termcols.Colorize(string(text), colors...)
+	_, err = io.WriteString(w, colored)
 	if err != nil {
-		exit, code := f.fail(err)
+		return err
+	}
+	return nil
+}
+
+func main() {
+	fl := newFailer(os.Stderr, os.Exit, exitFailure)
+
+	files, closer, err := parse(os.Args[1:], open)
+	defer closer()
+	if err != nil {
+		exit, code := fl.fail(err)
 		exit(code)
 	}
+
+	out := bufio.NewWriter(os.Stdout)
+
+	// TODO (michal): do a goroutine version of this code block; add some kind
+	// of closing <-done loop.
+	for _, f := range files {
+		err := pipe(f, out, styles)
+		if err != nil {
+			exit, code := fl.fail(err)
+			exit(code)
+		}
+	}
+
 	if err := out.Flush(); err != nil {
-		exit, code := f.fail(err)
+		exit, code := fl.fail(err)
 		exit(code)
 	}
 	os.Exit(exitSuccess)
