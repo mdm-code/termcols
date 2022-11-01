@@ -63,7 +63,7 @@ func TestCliParse(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			_, _, err := parse(c.args, func([]string) ([]io.Reader, func(), error) {
+			_, _, err := parse(c.args, func([]string, func(string) (*os.File, error)) ([]io.Reader, func(), error) {
 				return []io.Reader{}, func() {}, nil
 			})
 			if !errors.Is(err, c.err) {
@@ -89,5 +89,41 @@ func TestPipeText(t *testing.T) {
 		if !errors.Is(err, c.err) {
 			t.Errorf("Have %T; want %T", err, c.err)
 		}
+	}
+}
+
+func TestOpen(t *testing.T) {
+	errOpen := errors.New("open error")
+	cases := []struct {
+		name   string
+		fnames []string
+		f      func(string) (*os.File, error)
+		err    error
+	}{
+		{
+			"pass",
+			[]string{"one.txt", "two.md", "three.html"},
+			func(fname string) (*os.File, error) {
+				return &os.File{}, nil
+			},
+			nil,
+		},
+		{
+			"fail-open",
+			[]string{"one.txt", "two.md", "three.html"},
+			func(fname string) (*os.File, error) {
+				return nil, errOpen
+			},
+			errOpen,
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, closer, err := open(c.fnames, c.f)
+			defer closer()
+			if err != c.err {
+				t.Errorf("Have %T; want %T", err, c.err)
+			}
+		})
 	}
 }

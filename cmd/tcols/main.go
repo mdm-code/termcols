@@ -164,7 +164,7 @@ func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
 	return failer{w, fn, code, &sync.Mutex{}}
 }
 
-func parse(args []string, open func([]string) ([]io.Reader, func(), error)) ([]io.Reader, func(), error) {
+func parse(args []string, open func([]string, func(string) (*os.File, error)) ([]io.Reader, func(), error)) ([]io.Reader, func(), error) {
 	if len(args) == 0 {
 		return []io.Reader{}, func() {}, errParsing
 	}
@@ -185,12 +185,14 @@ func parse(args []string, open func([]string) ([]io.Reader, func(), error)) ([]i
 		return []io.Reader{}, func() {}, err
 	}
 	if len(fs.Args()) > 0 {
-		return open(fs.Args())
+		return open(fs.Args(), os.Open)
 	}
 	return []io.Reader{os.Stdin}, func() {}, nil
 }
 
-func open(fnames []string) ([]io.Reader, func(), error) {
+// Open opens files to have their contents read. The function f serves as the
+// main callable responsible for opening files.
+func open(fnames []string, f func(string) (*os.File, error)) ([]io.Reader, func(), error) {
 	var files []io.Reader
 	closer := func() {
 		for _, f := range files {
@@ -201,7 +203,7 @@ func open(fnames []string) ([]io.Reader, func(), error) {
 		}
 	}
 	for _, fname := range fnames {
-		f, err := os.Open(fname)
+		f, err := f(fname)
 		if err != nil {
 			return files, closer, err
 		}
