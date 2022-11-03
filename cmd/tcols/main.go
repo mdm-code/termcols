@@ -259,16 +259,37 @@ func run(args []string, fn openFn) error {
 	if err != nil {
 		return err
 	}
-	out := bufio.NewWriter(os.Stdout)
 
-	// TODO (michal): do a goroutine version of this code block; add some kind
-	// of closing <-done loop.
+	out := newConcurrentWriter(os.Stdout)
+
+	var wg sync.WaitGroup
+	wg.Add(len(files))
+
+	done := make(chan struct{})
+	fail := make(chan error)
+
 	for _, f := range files {
-		err := pipe(f, out, styles)
-		if err != nil {
-			return err
-		}
+		go func(r io.Reader) {
+			defer wg.Done()
+			err := pipe(r, out, styles)
+			if err != nil {
+				fail <- err
+			}
+		}(f)
 	}
+
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		break
+	case err := <-fail:
+		return err
+	}
+
 	if err := out.Flush(); err != nil {
 		return err
 	}
