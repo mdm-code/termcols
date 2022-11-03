@@ -4,6 +4,11 @@ import (
 	"testing"
 )
 
+// NOTE: benchResult is added to avoid compiler optimization
+var (
+	benchResult string
+)
+
 // BenchmarkColorize was arranged to test the performance of the slice type
 // conversion using unsafe.Pointer as opposed to looping over the source
 // slice and appending elements one after another to the target slice.
@@ -11,9 +16,11 @@ import (
 // In my testing slice type conversion with unsafe.Pointer is almost four
 // times faster than the memory-safe alternative.
 func BenchmarkColorize(b *testing.B) {
+	var s string
 	for i := 0; i < b.N; i++ {
-		Colorize("Colorize me!", BlackFg)
+		s = Colorize("Colorize me!", BlackFg)
 	}
+	benchResult = s
 }
 
 func TestColorize(t *testing.T) {

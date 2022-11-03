@@ -20,9 +20,9 @@ func TestMapColors(t *testing.T) {
 		{[]string{"rgb24=bg:255:255:255", "blink", "magentafg"}, nil},
 
 		// Failing colors
-		{[]string{"italics", "strike"}, errMap},
-		{[]string{"italic", "redgb"}, errMap},
-		{[]string{"italic", "rgb8=gf:240"}, errMap},
+		{[]string{"italics", "strike"}, ErrMap},
+		{[]string{"italic", "redgb"}, ErrMap},
+		{[]string{"italic", "rgb8=gf:240"}, ErrMap},
 	}
 	for _, c := range cases {
 		t.Run(strings.Join(c.colors, "-"), func(t *testing.T) {
@@ -57,10 +57,10 @@ func TestMapColor(t *testing.T) {
 		{"whitebfg", nil},
 
 		// Not-implemented colors and styles
-		{"purplefg", errMap},
-		{"greybg", errMap},
-		{"pinkbbg", errMap},
-		{"orangebfg", errMap},
+		{"purplefg", ErrMap},
+		{"greybg", ErrMap},
+		{"pinkbbg", ErrMap},
+		{"orangebfg", ErrMap},
 
 		// Passing RGB patterns
 		{"RGB8=fg:25", nil},
@@ -71,16 +71,16 @@ func TestMapColor(t *testing.T) {
 		{"rgb24=fg:0:12:255", nil},
 
 		// Failing RGB patterns
-		{"", errMap},                         // empty string
-		{"rgb24", errMap},                    // missing parameters
-		{"rgb8=gb:227", errMap},              // unknown layer (8)
-		{"rgb24=gf:227:12:142", errMap},      // unknown layer (24)
-		{"rgb9=bg:227", errMap},              // unknown bit size
-		{"rgb8=bg:255:255", errMap},          // too many color values (8)
-		{"rgb24=fg:255:255:255:255", errMap}, // too many color values (24)
-		{"rgb24=gf:12:245:0", errMap},        // unknown layer
-		{"rgb8=bg:256", errMap},              // 256 > uint8 255 cap (8)
-		{"rgb24=bg:255:256:123", errMap},     // 256 > uint8 255 cap (24)
+		{"", ErrMap},                         // empty string
+		{"rgb24", ErrMap},                    // missing parameters
+		{"rgb8=gb:227", ErrMap},              // unknown layer (8)
+		{"rgb24=gf:227:12:142", ErrMap},      // unknown layer (24)
+		{"rgb9=bg:227", ErrMap},              // unknown bit size
+		{"rgb8=bg:255:255", ErrMap},          // too many color values (8)
+		{"rgb24=fg:255:255:255:255", ErrMap}, // too many color values (24)
+		{"rgb24=gf:12:245:0", ErrMap},        // unknown layer
+		{"rgb8=bg:256", ErrMap},              // 256 > uint8 255 cap (8)
+		{"rgb24=bg:255:256:123", ErrMap},     // 256 > uint8 255 cap (24)
 	}
 	for _, c := range cases {
 		t.Run(c.color, func(t *testing.T) {
@@ -310,6 +310,55 @@ func TestValidUint(t *testing.T) {
 		t.Run(c.str, func(t *testing.T) {
 			if ok := validUint8(c.i); ok != c.okExp {
 				t.Errorf("Have %t; want: %t", ok, c.okExp)
+			}
+		})
+	}
+}
+
+func TestGetLayer(t *testing.T) {
+	cases := []struct {
+		name   string
+		params map[string]string
+		okExp  bool
+	}{
+		{"missing-param", map[string]string{"color": "redfg"}, false},
+		{"empty-params", map[string]string{}, false},
+		{"unknown-layer", map[string]string{"layer": "background"}, false},
+		{"layer-bg", map[string]string{"layer": "bg"}, true},
+		{"layer-fg", map[string]string{"layer": "fg"}, true},
+	}
+	for _, c := range cases {
+		t.Run("", func(t *testing.T) {
+			if _, ok := getLayer(c.params); ok != c.okExp {
+				t.Errorf("Have %t; want %t", ok, c.okExp)
+			}
+		})
+	}
+}
+
+func TestGetColor(t *testing.T) {
+	cases := []struct {
+		name   string
+		params map[string]string
+		key    string
+		okExp  bool
+	}{
+		{"empty-parms", map[string]string{}, "color", false},
+		{"mismatched-key-color", map[string]string{"r": "48"}, "color", false},
+		{"mismatched-key-r", map[string]string{"g": "248"}, "r", false},
+		{"mismatched-key-g", map[string]string{"b": "143"}, "g", false},
+		{"mismatched-key-b", map[string]string{"r": "0"}, "b", false},
+		{"color-not-int", map[string]string{"r": "red"}, "r", false},
+		{"invalid-uint8", map[string]string{"color": "278"}, "color", false},
+		{"valid-color", map[string]string{"color": "12"}, "color", true},
+		{"valid-r", map[string]string{"r": "234"}, "r", true},
+		{"valid-g", map[string]string{"g": "197"}, "g", true},
+		{"valid-b", map[string]string{"b": "65"}, "b", true},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if _, ok := getColor(c.params, c.key); ok != c.okExp {
+				t.Errorf("Have: %t; want %t", ok, c.okExp)
 			}
 		})
 	}

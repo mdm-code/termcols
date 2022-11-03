@@ -65,7 +65,8 @@ var colorMap map[string]SgrAttr = map[string]SgrAttr{
 }
 
 var (
-	errMap = errors.New("Color mapping error")
+	// ErrMap indicates that there were issues with disambiguating color names.
+	ErrMap = errors.New("Color mapping error")
 )
 
 // MapColors attempts to interpret string elements of the ss slice as a set of
@@ -80,7 +81,7 @@ func MapColors(ss []string) ([]SgrAttr, error) {
 	for _, s := range ss {
 		attr, err := MapColor(s)
 		if err != nil {
-			return []SgrAttr{}, errMap
+			return []SgrAttr{}, ErrMap
 		}
 		result = append(result, attr)
 	}
@@ -105,7 +106,7 @@ func MapColor(s string) (SgrAttr, error) {
 	if matchRegexp(re8, s) {
 		col, ok := collateRgb8(re8, s)
 		if !ok {
-			return "", errMap
+			return "", ErrMap
 		}
 		return col, nil
 	}
@@ -115,11 +116,11 @@ func MapColor(s string) (SgrAttr, error) {
 	if matchRegexp(re24, s) {
 		col, ok := collateRgb24(re24, s)
 		if !ok {
-			return "", errMap
+			return "", ErrMap
 		}
 		return col, nil
 	}
-	return "", errMap
+	return "", ErrMap
 }
 
 // MatchRegexp checks if val matches the provided regex r.
