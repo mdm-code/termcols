@@ -152,6 +152,11 @@ type (
 		code exitCode
 		mu   sync.Locker
 	}
+
+	concurrentWriter struct {
+		w *bufio.Writer
+		sync.Mutex
+	}
 )
 
 func (f *failer) fail(e error) (exitFunc, exitCode) {
@@ -161,8 +166,23 @@ func (f *failer) fail(e error) (exitFunc, exitCode) {
 	return f.fn, f.code
 }
 
+func (cw *concurrentWriter) Write(p []byte) (n int, err error) {
+	cw.Lock()
+	n, err = cw.w.Write(p)
+	cw.Unlock()
+	return
+}
+
+func (cw *concurrentWriter) Flush() error {
+	return cw.w.Flush()
+}
+
 func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
 	return failer{w, fn, code, &sync.Mutex{}}
+}
+
+func newConcurrentWriter(w io.Writer) *concurrentWriter {
+	return &concurrentWriter{w: bufio.NewWriter(w)}
 }
 
 func parse(args []string, open openFn) ([]io.Reader, func(), error) {
