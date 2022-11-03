@@ -65,7 +65,8 @@ var colorMap map[string]SgrAttr = map[string]SgrAttr{
 }
 
 var (
-	errMap = errors.New("Color mapping error")
+	// ErrMap indicates that there were issues with disambiguating color names.
+	ErrMap = errors.New("Color mapping error")
 )
 
 // MapColors attempts to interpret string elements of the ss slice as a set of
@@ -80,7 +81,7 @@ func MapColors(ss []string) ([]SgrAttr, error) {
 	for _, s := range ss {
 		attr, err := MapColor(s)
 		if err != nil {
-			return []SgrAttr{}, errMap
+			return []SgrAttr{}, ErrMap
 		}
 		result = append(result, attr)
 	}
@@ -105,7 +106,7 @@ func MapColor(s string) (SgrAttr, error) {
 	if matchRegexp(re8, s) {
 		col, ok := collateRgb8(re8, s)
 		if !ok {
-			return "", errMap
+			return "", ErrMap
 		}
 		return col, nil
 	}
@@ -115,11 +116,11 @@ func MapColor(s string) (SgrAttr, error) {
 	if matchRegexp(re24, s) {
 		col, ok := collateRgb24(re24, s)
 		if !ok {
-			return "", errMap
+			return "", ErrMap
 		}
 		return col, nil
 	}
-	return "", errMap
+	return "", ErrMap
 }
 
 // MatchRegexp checks if val matches the provided regex r.
@@ -134,85 +135,38 @@ func matchRegexp(r *regexp.Regexp, val any) bool {
 // CollateRgb8 parses string s into SgrAttr using the provided regex r.
 func collateRgb8(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	params := getParams(r, s)
-	lr, ok := params["layer"]
+	l, ok := getLayer(params)
 	if !ok {
-		return "", ok
-	}
-	lr = strings.ToLower(lr)
-	l, ok := layerMap[lr]
-	if !ok {
-		return "", ok
-	}
-
-	c, ok := params["color"]
-	if !ok {
-		return "", ok
-	}
-	col, err := strconv.Atoi(c)
-	if err != nil {
 		return "", false
 	}
-	if ok := validUint(col); !ok {
-		return "", ok
+	c, ok := getColor(params, "color")
+	if !ok {
+		return "", false
 	}
-
-	result := Rgb8(l, uint8(col))
+	result := Rgb8(l, c)
 	return result, true
 }
 
 // CollateRgb24 parses string s into SgrAttr using the provided regex r.
 func collateRgb24(r *regexp.Regexp, s string) (SgrAttr, bool) {
 	params := getParams(r, s)
-	lr, ok := params["layer"]
+	l, ok := getLayer(params)
 	if !ok {
-		return "", ok
-	}
-	lr = strings.ToLower(lr)
-	l, ok := layerMap[lr]
-	if !ok {
-		return "", ok
-	}
-
-	// Red
-	cr, ok := params["r"]
-	if !ok {
-		return "", ok
-	}
-	rcol, err := strconv.Atoi(cr)
-	if err != nil {
 		return "", false
 	}
-	if ok := validUint(rcol); !ok {
-		return "", ok
-	}
-
-	// Green
-	cg, ok := params["g"]
+	red, ok := getColor(params, "r")
 	if !ok {
-		return "", ok
-	}
-	gcol, err := strconv.Atoi(cg)
-	if err != nil {
 		return "", false
 	}
-	if ok = validUint(gcol); !ok {
-		return "", ok
-	}
-
-	// Blue
-	cb, ok := params["b"]
+	green, ok := getColor(params, "g")
 	if !ok {
-		return "", ok
-	}
-	bcol, err := strconv.Atoi(cb)
-	if err != nil {
 		return "", false
 	}
-	if ok := validUint(bcol); !ok {
-		return "", ok
+	blue, ok := getColor(params, "b")
+	if !ok {
+		return "", false
 	}
-
-	result := Rgb24(l, uint8(rcol), uint8(gcol), uint8(bcol))
+	result := Rgb24(l, red, green, blue)
 	return result, true
 }
 
@@ -228,8 +182,38 @@ func getParams(r *regexp.Regexp, s string) map[string]string {
 	return result
 }
 
-// ValidUint verifies if the integer i falls in range [0, 255] of uint8.
-func validUint(i int) bool {
+// GetLayer returns Layer based on the key in the params map.
+func getLayer(params map[string]string) (Layer, bool) {
+	lr, ok := params["layer"]
+	if !ok {
+		return "", false
+	}
+	lr = strings.ToLower(lr)
+	l, ok := layerMap[lr]
+	if !ok {
+		return "", false
+	}
+	return l, true
+}
+
+// GetColor returns the color based on the key in the params map.
+func getColor(params map[string]string, key string) (uint8, bool) {
+	val, ok := params[key]
+	if !ok {
+		return 0, false
+	}
+	col, err := strconv.Atoi(val)
+	if err != nil {
+		return 0, false
+	}
+	if ok := validUint8(col); !ok {
+		return 0, false
+	}
+	return uint8(col), true
+}
+
+// ValidUint8 verifies if the integer i falls in range [0, 255] of uint8.
+func validUint8(i int) bool {
 	if i >= 0 && i <= 255 {
 		return true
 	}

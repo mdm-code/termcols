@@ -26,27 +26,28 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/mdm-code/termcols"
 )
 
 const (
-	exitSuccess = iota
+	exitSuccess exitCode = iota
 	exitFailure
 )
 
 var (
-	styles []string
-)
-
-func usage() string {
-	s := `tcols - add color to text on the terminal
+	styles     []string
+	errParsing error = errors.New("failed to parse CLI arguments")
+	errPiping  error = errors.New("cannot read/write on nil interfaces")
+	usage            = fmt.Sprintf(`tcols - add color to text on the terminal
 
 Tcols reads text from a file and writes the colorized text to the standard
 output.
@@ -89,9 +90,7 @@ Rgb8:
 	%s %s
 Rgb24:
 	%s %s
-`
-	return fmt.Sprintf(
-		s,
+`,
 		`[1mbold[0m`,
 		`[2mfaint[0m`,
 		`[3mitalic[0m`,
@@ -140,38 +139,81 @@ Rgb24:
 		`[38;2;178;12;240mrgb24=fg:178:12:240[0m`,
 		`[48;2;57;124;12mrgb24=bg:57:124:12[0m`,
 	)
+)
+
+type (
+	exitCode = int
+	openFn   = func([]string, func(string) (*os.File, error)) ([]io.Reader, func(), error)
+	exitFunc func(exitCode)
+
+	failer struct {
+		w    io.Writer
+		fn   exitFunc
+		code exitCode
+		mu   sync.Locker
+	}
+
+	concurrentWriter struct {
+		w *bufio.Writer
+		sync.Mutex
+	}
+)
+
+func (f *failer) fail(e error) (exitFunc, exitCode) {
+	f.mu.Lock()
+	fmt.Fprintf(f.w, e.Error())
+	f.mu.Unlock()
+	return f.fn, f.code
 }
 
-func args() {
-	for _, flagName := range []string{"s", "style"} {
-		flag.Func(
-			flagName,
+func (cw *concurrentWriter) Write(p []byte) (n int, err error) {
+	cw.Lock()
+	n, err = cw.w.Write(p)
+	cw.Unlock()
+	return
+}
+
+func (cw *concurrentWriter) Flush() error {
+	return cw.w.Flush()
+}
+
+func newFailer(w io.Writer, fn exitFunc, code exitCode) failer {
+	return failer{w, fn, code, &sync.Mutex{}}
+}
+
+func newConcurrentWriter(w io.Writer) *concurrentWriter {
+	return &concurrentWriter{w: bufio.NewWriter(w)}
+}
+
+func parse(args []string, open openFn) ([]io.Reader, func(), error) {
+	if len(args) == 0 {
+		return []io.Reader{}, func() {}, errParsing
+	}
+	fs := flag.NewFlagSet("tcols", flag.ExitOnError)
+	for _, fName := range []string{"s", "styles"} {
+		fs.Func(
+			fName,
 			"list of styles and colors to apply to text",
 			func(v string) error {
-				styles = strings.Fields(v)
+				styles = append(styles, strings.Fields(v)...)
 				return nil
 			},
 		)
 	}
-	flag.Usage = func() { fmt.Print(usage()) }
-	flag.Parse()
+	fs.Usage = func() { fmt.Printf(usage) }
+	err := fs.Parse(args)
+	if err != nil {
+		return []io.Reader{}, func() {}, err
+	}
+	if len(fs.Args()) > 0 {
+		return open(fs.Args(), os.Open)
+	}
+	return []io.Reader{os.Stdin}, func() {}, nil
 }
 
-func readText(bb *[]byte, rr ...io.Reader) error {
-	if len(rr) == 0 {
-		return nil
-	}
-	for _, r := range rr {
-		b, err := ioutil.ReadAll(r)
-		if err != nil {
-			return err
-		}
-		*bb = append(*bb, b...)
-	}
-	return nil
-}
-
-func argsFiles() ([]io.Reader, func(), error) {
+// Open opens files to have their contents read. The function f serves as the
+// main callable responsible for opening files.
+func open(fnames []string, f func(string) (*os.File, error)) ([]io.Reader, func(), error) {
 	var files []io.Reader
 	closer := func() {
 		for _, f := range files {
@@ -181,8 +223,8 @@ func argsFiles() ([]io.Reader, func(), error) {
 			}
 		}
 	}
-	for _, fname := range flag.Args() {
-		f, err := os.Open(fname)
+	for _, fname := range fnames {
+		f, err := f(fname)
 		if err != nil {
 			return files, closer, err
 		}
@@ -191,42 +233,75 @@ func argsFiles() ([]io.Reader, func(), error) {
 	return files, closer, nil
 }
 
-func fail(w io.Writer, e error) {
-	fmt.Fprintf(w, e.Error())
-	os.Exit(exitFailure)
+func pipe(r io.Reader, w io.Writer, styles []string) error {
+	if r == nil && w == nil {
+		return errPiping
+	}
+	text, err := ioutil.ReadAll(r)
+	if err != nil {
+		return errPiping
+	}
+	colors, err := termcols.MapColors(styles)
+	if err != nil {
+		return err
+	}
+	colored := termcols.Colorize(string(text), colors...)
+	_, err = io.WriteString(w, colored)
+	if err != nil {
+		return errPiping
+	}
+	return nil
+}
+
+func run(args []string, fn openFn) error {
+	files, closer, err := parse(args, fn)
+	defer closer()
+	if err != nil {
+		return err
+	}
+
+	out := newConcurrentWriter(os.Stdout)
+
+	var wg sync.WaitGroup
+	wg.Add(len(files))
+
+	done := make(chan struct{})
+	fail := make(chan error)
+
+	for _, f := range files {
+		go func(r io.Reader) {
+			defer wg.Done()
+			err := pipe(r, out, styles)
+			if err != nil {
+				fail <- err
+			}
+		}(f)
+	}
+
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		break
+	case err := <-fail:
+		return err
+	}
+
+	if err := out.Flush(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func main() {
-	args()
-	text := make([]byte, 0, 64)
-	if len(flag.Args()) > 0 {
-		files, closer, err := argsFiles()
-		defer closer()
-		if err != nil {
-			fail(os.Stderr, err)
-		}
-		err = readText(&text, files...)
-		if err != nil {
-			fail(os.Stderr, err)
-		}
-	} else {
-		err := readText(&text, os.Stdin)
-		if err != nil {
-			fail(os.Stderr, err)
-		}
-	}
-	out := bufio.NewWriter(os.Stdout)
-	colors, err := termcols.MapColors(styles)
+	f := newFailer(os.Stderr, os.Exit, exitFailure)
+	err := run(os.Args[1:], open)
 	if err != nil {
-		fail(os.Stderr, err)
-	}
-	output := termcols.Colorize(string(text), colors...)
-	_, err = out.WriteString(output)
-	if err != nil {
-		fail(os.Stderr, err)
-	}
-	if err := out.Flush(); err != nil {
-		fail(os.Stderr, err)
+		exit, code := f.fail(err)
+		exit(code)
 	}
 	os.Exit(exitSuccess)
 }
