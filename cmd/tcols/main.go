@@ -15,7 +15,8 @@ Options:
 
 Example:
 
-	tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
+	tcols --style 'bold bluefg' < <(echo -n 'Hello, world!')
+	echo -n Hello, world\! | tcols -s bold -s bluefg
 
 Output:
 
