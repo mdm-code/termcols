@@ -49,10 +49,9 @@ const (
 )
 
 var (
-	styles     []string
-	errParsing error = errors.New("failed to parse CLI arguments")
-	errPiping  error = errors.New("cannot read/write on nil interfaces")
-	usage            = fmt.Sprintf(`tcols - add color to text on the terminal
+	styles    []string
+	errPiping error = errors.New("cannot read/write on nil interfaces")
+	usage           = fmt.Sprintf(`tcols - add color to text on the terminal
 
 Tcols reads text from a file and writes the colorized text to the standard
 output.
@@ -191,9 +190,6 @@ func newConcurrentWriter(w io.Writer) *concurrentWriter {
 }
 
 func parse(args []string, open openFn) ([]io.Reader, func(), error) {
-	if len(args) == 0 {
-		return []io.Reader{}, func() {}, errParsing
-	}
 	fs := flag.NewFlagSet("tcols", flag.ExitOnError)
 	for _, fName := range []string{"s", "styles"} {
 		fs.Func(
