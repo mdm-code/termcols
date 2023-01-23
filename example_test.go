@@ -8,7 +8,7 @@ import (
 
 // ExampleColorize shows how to use termcols public API Colorize function.
 // It uses a combination of style, foreground and colors to stylize the
-// ``Colorize text\!'' string.
+// “Colorize text\!” string.
 func ExampleColorize() {
 	s := termcols.Colorize(
 		"Colorized text!",

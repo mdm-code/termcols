@@ -5,16 +5,21 @@ Tcols reads text from a file and writes the colorized text to the standard
 output.
 
 Usage:
+
 	tcols [-s|--style arg...] [file...]
 
 Options:
+
 	-h, --help   show this help message and exit
 	-s, --style  list of styles and colors to apply to text
 
 Example:
-	tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
+
+	tcols --style 'bold bluefg' < <(echo -n 'Hello, world!')
+	echo -n Hello, world\! | tcols -s bold -s bluefg
 
 Output:
+
 	Raw: \033[1m\033[34mHello, World!\033[0m
 
 The program returns text read from a file with Select Graphic Rendition control
@@ -44,10 +49,9 @@ const (
 )
 
 var (
-	styles     []string
-	errParsing error = errors.New("failed to parse CLI arguments")
-	errPiping  error = errors.New("cannot read/write on nil interfaces")
-	usage            = fmt.Sprintf(`tcols - add color to text on the terminal
+	styles    []string
+	errPiping error = errors.New("cannot read/write on nil interfaces")
+	usage           = fmt.Sprintf(`tcols - add color to text on the terminal
 
 Tcols reads text from a file and writes the colorized text to the standard
 output.
@@ -186,9 +190,6 @@ func newConcurrentWriter(w io.Writer) *concurrentWriter {
 }
 
 func parse(args []string, open openFn) ([]io.Reader, func(), error) {
-	if len(args) == 0 {
-		return []io.Reader{}, func() {}, errParsing
-	}
 	fs := flag.NewFlagSet("tcols", flag.ExitOnError)
 	for _, fName := range []string{"s", "styles"} {
 		fs.Func(
