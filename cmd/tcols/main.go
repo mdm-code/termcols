@@ -5,16 +5,20 @@ Tcols reads text from a file and writes the colorized text to the standard
 output.
 
 Usage:
+
 	tcols [-s|--style arg...] [file...]
 
 Options:
+
 	-h, --help   show this help message and exit
 	-s, --style  list of styles and colors to apply to text
 
 Example:
+
 	tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
 
 Output:
+
 	Raw: \033[1m\033[34mHello, World!\033[0m
 
 The program returns text read from a file with Select Graphic Rendition control

@@ -23,23 +23,23 @@ implemented to simplify the terminal tcols command.
 
 # Usage
 
-  package main
+	package main
 
-  import (
-  	"fmt"
+	import (
+		"fmt"
 
-	"github.com/mdm-code/termcols"
-  )
-
-  func main() {
-	s := termcols.Colorize(
-		"Colorized text!",
-		termcols.RedFg,
-		termcols.Underline,
-		termcols.Rgb24(termcols.BG, 120, 255, 54),
+		"github.com/mdm-code/termcols"
 	)
-  	fmt.Println(s)
-  }
+
+	func main() {
+		s := termcols.Colorize(
+			"Colorized text!",
+			termcols.RedFg,
+			termcols.Underline,
+			termcols.Rgb24(termcols.BG, 120, 255, 54),
+		)
+		fmt.Println(s)
+	}
 
 [Wikipedia ANSI]: https://en.wikipedia.org/wiki/ANSI_escape_code
 */
