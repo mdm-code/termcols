@@ -94,7 +94,7 @@ Aside from using the `termcols` package API that can be used in your Go
 project, can use the `tcols` terminal command:
 
 ```sh
-tcols -style 'redfg underline rgb24=bg:120:255:54' < <(echo -n 'Hello, world!')
+tcols --style 'redfg underline rgb24=bg:120:255:54' < <(echo -n 'Hello, world!')
 ```
 
 Type `tcols -h` to get a list of styles and colors to (1) see what is implemented

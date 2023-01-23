@@ -74,8 +74,8 @@ var (
 // come in one of the case-insensitive patterns listed below. Otherwise the
 // function returns an empty slice and errMap.
 //
-//   RGB 8  : rgb8=[fg|bg]:[0-255]
-//   RGB 24 : rgb24=[fg|bg]:[0-255]:[0-255]:[0-255]
+//	RGB 8  : rgb8=[fg|bg]:[0-255]
+//	RGB 24 : rgb24=[fg|bg]:[0-255]:[0-255]:[0-255]
 func MapColors(ss []string) ([]SgrAttr, error) {
 	result := make([]SgrAttr, 0, 3)
 	for _, s := range ss {
@@ -93,8 +93,8 @@ func MapColors(ss []string) ([]SgrAttr, error) {
 // one of the case-insensitive patterns listed below. Otherwise the function
 // returns an empty string of type SgrAttr and errMap.
 //
-//   RGB 8  : rgb8=[fg|bg]:[0-255]
-//   RGB 24 : rgb24=[fg|bg]:[0-255]:[0-255]:[0-255]
+//	RGB 8  : rgb8=[fg|bg]:[0-255]
+//	RGB 24 : rgb24=[fg|bg]:[0-255]:[0-255]:[0-255]
 func MapColor(s string) (SgrAttr, error) {
 	col, ok := colorMap[strings.ToLower(s)]
 	if ok {
