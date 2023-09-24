@@ -235,6 +235,9 @@ func open(fnames []string, f func(string) (*os.File, error)) ([]io.Reader, func(
 	return files, closer, nil
 }
 
+// Pipe transfers the input text colorized according to the provided styles
+// from the r reader to the w writer. The colorize parameter controls if the
+// text should be colorized.
 func pipe(r io.Reader, w io.Writer, styles []string, colorize bool) error {
 	if r == nil && w == nil {
 		return errPiping
