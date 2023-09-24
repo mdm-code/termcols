@@ -202,7 +202,7 @@ func parse(args []string, open openFn) ([]io.Reader, func(), error) {
 			},
 		)
 	}
-	fs.Usage = func() { fmt.Printf(usage) }
+	fs.Usage = func() { fmt.Fprintf(os.Stderr, usage) }
 	err := fs.Parse(args)
 	if err != nil {
 		return []io.Reader{}, func() {}, err
