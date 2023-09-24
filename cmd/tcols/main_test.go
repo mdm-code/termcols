@@ -86,19 +86,21 @@ func TestCliParse(t *testing.T) {
 // TestPipeText tests a single, single-threaded pass of text data.
 func TestPipeText(t *testing.T) {
 	cases := []struct {
-		r   io.Reader
-		w   io.Writer
-		s   []string
-		err error
+		reader   io.Reader
+		writer   io.Writer
+		styles   []string
+		colorize bool
+		err      error
 	}{
-		{&mockReader{}, &mockWriter{}, []string{}, nil},
-		{nil, nil, []string{}, errPiping},
-		{&mockReader{}, &mockWriter{}, []string{"blue"}, termcols.ErrMap},
-		{&failReader{}, &mockWriter{}, []string{}, errPiping},
-		{&mockReader{}, &failWriter{}, []string{}, errPiping},
+		{&mockReader{}, &mockWriter{}, []string{}, true, nil},
+		{nil, nil, []string{}, true, errPiping},
+		{&mockReader{}, &mockWriter{}, []string{"blue"}, true, termcols.ErrMap},
+		{&mockReader{}, &mockWriter{}, []string{"red"}, false, termcols.ErrMap},
+		{&failReader{}, &mockWriter{}, []string{}, true, errPiping},
+		{&mockReader{}, &failWriter{}, []string{}, true, errPiping},
 	}
 	for _, c := range cases {
-		err := pipe(c.r, c.w, c.s)
+		err := pipe(c.reader, c.writer, c.styles, c.colorize)
 		if !errors.Is(err, c.err) {
 			t.Errorf("Have %T; want %T", err, c.err)
 		}

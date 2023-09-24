@@ -41,6 +41,7 @@ import (
 	"sync"
 
 	"github.com/mdm-code/termcols"
+	"golang.org/x/term"
 )
 
 const (
@@ -234,7 +235,10 @@ func open(fnames []string, f func(string) (*os.File, error)) ([]io.Reader, func(
 	return files, closer, nil
 }
 
-func pipe(r io.Reader, w io.Writer, styles []string) error {
+// Pipe transfers the input text colorized according to the provided styles
+// from the r reader to the w writer. The colorize parameter controls if the
+// text should be colorized.
+func pipe(r io.Reader, w io.Writer, styles []string, colorize bool) error {
 	if r == nil && w == nil {
 		return errPiping
 	}
@@ -246,8 +250,15 @@ func pipe(r io.Reader, w io.Writer, styles []string) error {
 	if err != nil {
 		return err
 	}
-	colored := termcols.Colorize(string(text), colors...)
-	_, err = io.WriteString(w, colored)
+	if colorize {
+		colored := termcols.Colorize(string(text), colors...)
+		_, err = io.WriteString(w, colored)
+		if err != nil {
+			return errPiping
+		}
+		return nil
+	}
+	_, err = w.Write(text)
 	if err != nil {
 		return errPiping
 	}
@@ -263,6 +274,11 @@ func run(args []string, fn openFn) error {
 
 	out := newConcurrentWriter(os.Stdout)
 
+	var colorize bool
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		colorize = true
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(len(files))
 
@@ -272,7 +288,7 @@ func run(args []string, fn openFn) error {
 	for _, f := range files {
 		go func(r io.Reader) {
 			defer wg.Done()
-			err := pipe(r, out, styles)
+			err := pipe(r, out, styles, colorize)
 			if err != nil {
 				fail <- err
 			}
