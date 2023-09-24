@@ -41,6 +41,7 @@ import (
 	"sync"
 
 	"github.com/mdm-code/termcols"
+	"golang.org/x/term"
 )
 
 const (
@@ -270,7 +271,10 @@ func run(args []string, fn openFn) error {
 
 	out := newConcurrentWriter(os.Stdout)
 
-	colorize := true
+	var colorize bool
+	if term.IsTerminal(int(os.Stdout.Fd())) {
+		colorize = true
+	}
 
 	var wg sync.WaitGroup
 	wg.Add(len(files))
