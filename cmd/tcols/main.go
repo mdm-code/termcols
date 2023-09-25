@@ -208,7 +208,7 @@ func prepUsageAttrs(colored bool) []any {
 
 func parse(args []string, open openFn) ([]io.Reader, func(), error) {
 	fs := flag.NewFlagSet("tcols", flag.ExitOnError)
-	for _, fName := range []string{"s", "styles"} {
+	for _, fName := range []string{"s", "style"} {
 		fs.Func(
 			fName,
 			"list of styles and colors to apply to text",

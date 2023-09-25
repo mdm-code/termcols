@@ -67,9 +67,9 @@ func TestCliParse(t *testing.T) {
 		args []string
 		err  error
 	}{
-		{"pass-01", []string{"-styles", "redfg bluefg"}, nil},
+		{"pass-01", []string{"-style", "redfg bluefg"}, nil},
 		{"pass-02", []string{"-s", "strike rgb24=fg:242:121:64"}, nil},
-		{"pass-03", []string{"-s", "yellowbg", "--styles", "bluefg"}, nil},
+		{"pass-03", []string{"-s", "yellowbg", "--style", "bluefg"}, nil},
 		{"pass-04", []string{}, nil},
 	}
 	for _, c := range cases {
@@ -182,7 +182,7 @@ func TestRun(t *testing.T) {
 	}{
 		{"pass-01", []string{"-s", "greenbg yellowfg bold", "1.pyc", "2.c"}, f, nil},
 		{"pass-02", []string{}, f, nil},
-		{"fail-01", []string{"--styles", "wacky", "hello.py"}, f, termcols.ErrMap},
+		{"fail-01", []string{"--style", "wacky", "hello.py"}, f, termcols.ErrMap},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
