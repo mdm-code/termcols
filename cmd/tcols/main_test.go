@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -138,6 +139,32 @@ func TestOpen(t *testing.T) {
 			defer closer()
 			if err != c.err {
 				t.Errorf("Have %T; want %T", err, c.err)
+			}
+		})
+	}
+}
+
+func TestPrepUsageAttrs(t *testing.T) {
+	cases := []struct {
+		name    string
+		colored bool
+	}{
+		{"colored", true},
+		{"non-colored", false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			want := make([]any, 0, len(usageAttrs))
+			for _, v := range usageAttrs {
+				if c.colored {
+					want = append(want, fmt.Sprintf(v[1], v[0]))
+					continue
+				}
+				want = append(want, v[0])
+			}
+			have := prepUsageAttrs(c.colored)
+			if !reflect.DeepEqual(have, want) {
+				t.Errorf("Have %v; want %v", have, want)
 			}
 		})
 	}

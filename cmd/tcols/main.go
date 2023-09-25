@@ -50,9 +50,59 @@ const (
 )
 
 var (
-	styles    []string
-	errPiping error = errors.New("cannot read/write on nil interfaces")
-	usage           = fmt.Sprintf(`tcols - add color to text on the terminal
+	styles     []string
+	errPiping  error = errors.New("cannot read/write on nil interfaces")
+	usageAttrs       = [...][2]string{
+		{"Hello, world!", string(termcols.Bold) + string(termcols.BlueFg) + "%s" + string(termcols.Reset)},
+		{"bold", string(termcols.Bold) + "%s" + string(termcols.Reset)},
+		{"faint", string(termcols.Faint) + "%s" + string(termcols.Reset)},
+		{"italic", string(termcols.Italic) + "%s" + string(termcols.Reset)},
+		{"underline", string(termcols.Underline) + "%s" + string(termcols.Reset)},
+		{"blink", string(termcols.Blink) + "%s" + string(termcols.Reset)},
+		{"reverse", string(termcols.Reverse) + "%s" + string(termcols.Reset)},
+		{"hide", string(termcols.Hide) + "%s" + string(termcols.Reset)},
+		{"strike", string(termcols.Strike) + "%s" + string(termcols.Reset)},
+		{"defaultstyle", string(termcols.DefaultStyle) + "%s" + string(termcols.Reset)},
+		{"blackfg", string(termcols.BlackFg) + "%s" + string(termcols.Reset)},
+		{"blackbfg", string(termcols.BlackBfg) + "%s" + string(termcols.Reset)},
+		{"blackbg", string(termcols.BlackBg) + "%s" + string(termcols.Reset)},
+		{"blackbbg", string(termcols.BlackBbg) + "%s" + string(termcols.Reset)},
+		{"redfg", string(termcols.RedFg) + "%s" + string(termcols.Reset)},
+		{"redbfg", string(termcols.RedBfg) + "%s" + string(termcols.Reset)},
+		{"redbg", string(termcols.RedBg) + "%s" + string(termcols.Reset)},
+		{"redbbg", string(termcols.RedBbg) + "%s" + string(termcols.Reset)},
+		{"greenfg", string(termcols.GreenFg) + "%s" + string(termcols.Reset)},
+		{"greenbfg", string(termcols.GreenBfg) + "%s" + string(termcols.Reset)},
+		{"greenbg", string(termcols.GreenBg) + "%s" + string(termcols.Reset)},
+		{"greenbbg", string(termcols.GreenBbg) + "%s" + string(termcols.Reset)},
+		{"yellowfg", string(termcols.YellowFg) + "%s" + string(termcols.Reset)},
+		{"yellowbfg", string(termcols.YellowBfg) + "%s" + string(termcols.Reset)},
+		{"yellowbg", string(termcols.YellowBg) + "%s" + string(termcols.Reset)},
+		{"yellowbbg", string(termcols.YellowBbg) + "%s" + string(termcols.Reset)},
+		{"bluefg", string(termcols.BlueFg) + "%s" + string(termcols.Reset)},
+		{"bluebfg", string(termcols.BlueBfg) + "%s" + string(termcols.Reset)},
+		{"bluebg", string(termcols.BlueBg) + "%s" + string(termcols.Reset)},
+		{"bluebbg", string(termcols.BlueBbg) + "%s" + string(termcols.Reset)},
+		{"magentafg", string(termcols.MagentaFg) + "%s" + string(termcols.Reset)},
+		{"magentabfg", string(termcols.MagentaBfg) + "%s" + string(termcols.Reset)},
+		{"magentabg", string(termcols.MagentaBg) + "%s" + string(termcols.Reset)},
+		{"magentabbg", string(termcols.MagentaBbg) + "%s" + string(termcols.Reset)},
+		{"cyanfg", string(termcols.CyanFg) + "%s" + string(termcols.Reset)},
+		{"cyanbfg", string(termcols.CyanBfg) + "%s" + string(termcols.Reset)},
+		{"cyanbg", string(termcols.CyanBg) + "%s" + string(termcols.Reset)},
+		{"cyanbbg", string(termcols.CyanBbg) + "%s" + string(termcols.Reset)},
+		{"whitefg", string(termcols.WhiteFg) + "%s" + string(termcols.Reset)},
+		{"whitebfg", string(termcols.WhiteBfg) + "%s" + string(termcols.Reset)},
+		{"whitebg", string(termcols.WhiteBg) + "%s" + string(termcols.Reset)},
+		{"whitebbg", string(termcols.WhiteBbg) + "%s" + string(termcols.Reset)},
+		{"defaultfg", string(termcols.DefaultFg) + "%s" + string(termcols.Reset)},
+		{"defaultbg", string(termcols.DefaultBg) + "%s" + string(termcols.Reset)},
+		{"rgb8=fg:178", `[38;5;178m%s[0m`},
+		{"rgb8=bg:57", `[48;5;57m%s[0m`},
+		{"rgb24=fg:178:12:240", `[38;2;178;12;240m%s[0m`},
+		{"rgb24=fg:57:124:12", `[48;2;57;124;12m%s[0m`},
+	}
+	usage = `tcols - add color to text on the terminal
 
 Tcols reads text from a file and writes the colorized text to the standard
 output.
@@ -68,7 +118,7 @@ Example:
 	tcols -style 'bold bluefg' < <(echo -n 'Hello, world!')
 
 Output:
-	[1m[34mHello, World![0m
+	%s
 
 The program returns text read from a file with Select Graphic Rendition control
 sequences prepended and the reset control sequence appended at the end. The
@@ -95,55 +145,7 @@ Rgb8:
 	%s %s
 Rgb24:
 	%s %s
-`,
-		`[1mbold[0m`,
-		`[2mfaint[0m`,
-		`[3mitalic[0m`,
-		`[4munderline[0m`,
-		`[5mblink[0m`,
-		`[7mreverse[0m`,
-		`[8mhide[0m`,
-		`[9mstrike[0m`,
-		`[10mdefaultstyle[0m`,
-		`[30mblackfg[0m`,
-		`[90mblackbfg[0m`,
-		`[40mblackbg[0m`,
-		`[100mblackbbg[0m`,
-		`[31mredfg[0m`,
-		`[91mredbbfg[0m`,
-		`[41mredbg[0m`,
-		`[101mredbbbg[0m`,
-		`[32mgreenfg[0m`,
-		`[92mgreenbfg[0m`,
-		`[42mgreenbg[0m`,
-		`[102mgreenbbg[0m`,
-		`[33myellowfg[0m`,
-		`[93myellowbfg[0m`,
-		`[43myellowbg[0m`,
-		`[103myellowbbg[0m`,
-		`[34mbluefg[0m`,
-		`[94mbluebfg[0m`,
-		`[44mbluebg[0m`,
-		`[104mbluebbg[0m`,
-		`[35mmagentafg[0m`,
-		`[95mmagentabfg[0m`,
-		`[45mmagentabg[0m`,
-		`[105mmagentabbg[0m`,
-		`[36mcyanfg[0m`,
-		`[96mcyanbfg[0m`,
-		`[46mcyanbg[0m`,
-		`[106mcyanbbg[0m`,
-		`[37mwhitefg[0m`,
-		`[97mwhitebfg[0m`,
-		`[47mwhitebg[0m`,
-		`[107mwhitebbg[0m`,
-		`[39mdefaultfg[0m`,
-		`[49mdefaultbg[0m`,
-		`[38;5;178mrgb8=fg:178[0m`,
-		`[48;5;57mrgb8=bg:57[0m`,
-		`[38;2;178;12;240mrgb24=fg:178:12:240[0m`,
-		`[48;2;57;124;12mrgb24=bg:57:124:12[0m`,
-	)
+`
 )
 
 type (
@@ -190,6 +192,20 @@ func newConcurrentWriter(w io.Writer) *concurrentWriter {
 	return &concurrentWriter{w: bufio.NewWriter(w)}
 }
 
+// PrepUsageAttrs collates colored or non-colored usage attributes.
+func prepUsageAttrs(colored bool) []any {
+	result := make([]any, 0, len(usageAttrs))
+	for _, v := range usageAttrs {
+		if colored {
+			parsed := fmt.Sprintf(v[1], v[0])
+			result = append(result, parsed)
+			continue
+		}
+		result = append(result, v[0])
+	}
+	return result
+}
+
 func parse(args []string, open openFn) ([]io.Reader, func(), error) {
 	fs := flag.NewFlagSet("tcols", flag.ExitOnError)
 	for _, fName := range []string{"s", "styles"} {
@@ -202,7 +218,16 @@ func parse(args []string, open openFn) ([]io.Reader, func(), error) {
 			},
 		)
 	}
-	fs.Usage = func() { fmt.Printf(usage) }
+	fs.Usage = func() {
+		usageOut := os.Stdout
+		if term.IsTerminal(int(usageOut.Fd())) {
+			colored := prepUsageAttrs(true)
+			fmt.Fprintf(usageOut, fmt.Sprintf(usage, colored...))
+			return
+		}
+		bw := prepUsageAttrs(false)
+		fmt.Fprintf(usageOut, fmt.Sprintf(usage, bw...))
+	}
 	err := fs.Parse(args)
 	if err != nil {
 		return []io.Reader{}, func() {}, err
