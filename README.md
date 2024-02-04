@@ -125,7 +125,7 @@ This will give you ns/op value for the setup it's been benchmarked on.
 
 ## License
 
-Copyright (c) 2022 Michał Adamczyk.
+Copyright (c) 2024 Michał Adamczyk.
 
 This project is licensed under the [MIT license](https://opensource.org/licenses/MIT).
 See [LICENSE](LICENSE) for more details.
