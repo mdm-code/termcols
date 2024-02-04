@@ -104,8 +104,26 @@ and (2) what is supported by your terminal.
 Alternatively, `tcols` can be run from inside of the Docker container:
 
 ```sh
-docker run -i ghcr.io/mdm-code/tcols:latest tcols -s 'redfg bluebg' < <(echo -n 'Hello, world!')
+docker run --rm --tty --volume "$(pwd)/:/files" ghcr.io/mdm-code/tcols tcols -s "redfg bluebg" files/test.txt
 ```
+
+This however, requires some additional configuration to how the container is
+run. The default stdout of the container is not recognized as tty by the
+process run inside of the container even though it would be printed out to the
+terminal by default. `tcols` detects if stdout is attached to tty or whether
+its piped to stdin of some other process. In the case of the latter, the output
+is not colored because additional SGR control sequences and escape sequences
+would mess up the text and possibly result in some unexpected output being
+piped out.
+
+This means that in order to print out the colored output `docker run` has to
+include the `--tty` flag to attach the pseudo-tty to the container. This
+prevents piping data with through the stdin of the container as its already
+reserved by the pseudo-tty, so this option is out. `tcols` accepts file names
+as positional arguments, but since files are not immediately accessible from
+inside of the container, one way to go about it is to attach a volume to the
+container and then reference these files accordingly. This is what the example
+above does.
 
 
 ## Development
