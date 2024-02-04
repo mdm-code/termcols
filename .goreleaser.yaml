@@ -61,7 +61,7 @@ snapshot:
 release:
   github:
     owner: mdm-code
-    name: tcols
+    name: termcols
   draft: true
   prerelease: auto
   mode: replace
