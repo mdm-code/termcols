@@ -101,6 +101,13 @@ Type `tcols -h` to get a list of styles and colors to (1) see what is implemente
 and (2) what is supported by your terminal.
 
 
+Alternatively, `tcols` can be run from inside of the Docker container:
+
+```sh
+docker run -i ghcr.io/mdm-code/tcols:latest tcols -s 'redfg bluebg' < <(echo -n 'Hello, world!')
+```
+
+
 ## Development
 
 Consult [Makefile](Makefile) to see how to format, examine code with `go vet`,
